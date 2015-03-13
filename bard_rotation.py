@@ -2,13 +2,16 @@ import random
 import sys
 
 # Bard rotation potency calculator.
-# TODO: fix lol code
-#       support opening rotations
+# TODO: fix rofl code
 #       associate total potency dealt on enemy
-#       support mid-GCD activation of buffs, especially Barrage and Bloodletter spam
+#       make this faster
 GCD = 2.45
 AUTO_ATTACK_DELAY = 3.04
 CRITICAL_HIT_RATE = 0.197586
+DAMAGE_PER_POTENCY = 2.4888
+LONG_DELAY = 1.1
+SHORT_DELAY = 0.7
+GCD_DELAY = 1.0
 
 class Timer:
     def __init__(self, name, duration, snapshot=None):
@@ -85,64 +88,64 @@ class Bard:
         return self.get_modified_potency(potency, snapshot)
 
     def hawks_eye(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.timers.set_timer("Hawk's Eye", 20)
         return True
 
     def raging_strikes(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.timers.set_timer("Raging Strikes", 20)
         return True
 
     def internal_release(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.timers.set_timer("Internal Release", 15)
         return True
 
     def barrage(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.timers.set_timer("Barrage", 10)
         return True
 
     def blood_for_blood(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.timers.set_timer("Blood for Blood", 20)
         return True
 
     def x_potion_of_dexterity(self):
-        self.animation_lock = 1.1
+        self.animation_lock = LONG_DELAY
         self.timers.set_timer("X-Potion of Dexterity", 15)
         return True
 
     def flaming_arrow(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.timers.set_timer("Flaming Arrow", 30, self.timers.create_snapshot())
         return True
 
     def blunt_arrow(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.total_potency += self.get_modified_normal_potency(50)
         return True
 
     def repelling_shot(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.total_potency += self.get_modified_normal_potency(80)
         return True
 
     def bloodletter(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.total_potency += self.get_modified_normal_potency(150)
         return True
 
     def invigorate(self):
-        self.animation_lock = 0.7
+        self.animation_lock = SHORT_DELAY
         self.tp = min(self.tp + 400, 1000)
         return True
 
     def heavy_shot(self):
         if self.tp >= 60:
             self.tp -= 60
-            self.animation_lock = 1.0
+            self.animation_lock = GCD_DELAY
             self.total_potency += self.get_modified_normal_potency(150)
             if random.random() < 0.2:
                 self.timers.set_timer("Straighter Shot", 10)
@@ -152,7 +155,7 @@ class Bard:
     def straight_shot(self):
         if self.tp >= 70:
             self.tp -= 70
-            self.animation_lock = 1.0
+            self.animation_lock = GCD_DELAY
             if self.timers.has_timer("Straighter Shot"):
                 self.total_potency += self.get_modified_normal_potency(140, True)
                 self.timers.delete_timer("Straighter Shot")
@@ -166,7 +169,7 @@ class Bard:
     def windbite(self):
         if self.tp >= 80:
             self.tp -= 80
-            self.animation_lock = 1.0
+            self.animation_lock = GCD_DELAY
             self.total_potency += self.get_modified_normal_potency(60)
             self.timers.set_timer("Windbite", 18, self.timers.create_snapshot())
             return True
@@ -175,7 +178,7 @@ class Bard:
     def venomous_bite(self):
         if self.tp >= 80:
             self.tp -= 80
-            self.animation_lock = 1.0
+            self.animation_lock = GCD_DELAY
             self.total_potency += self.get_modified_normal_potency(100)
             self.timers.set_timer("Venomous Bite", 18, self.timers.create_snapshot())
             return True
@@ -368,6 +371,10 @@ class Bard:
                 if duration < time_passed:
                     time_passed = duration
 
+        # If time_passed is greater than 0.05, then set time_passed to 0.05. 
+        # This is to ensure that we don't skip too much time.
+        time_passed = min(time_passed, 0.05)
+
         # ========================================================
 
         # Go through each timer again and decrement by time_passed.
@@ -442,12 +449,12 @@ class Bard:
             self.use("GCD")
 
         # Long animations
-        if self.ability_cooldowns["GCD"] >= 1.2:
+        if self.ability_cooldowns["GCD"] >= LONG_DELAY:
             if self.can_use("X-Potion of Dexterity"):
                 self.use("X-Potion of Dexterity")
 
         # Regular animations
-        if self.ability_cooldowns["GCD"] >= 0.8:
+        if self.ability_cooldowns["GCD"] >= SHORT_DELAY:
             if self.can_use("Invigorate") and self.tp <= 600 and \
                self.misc_cooldowns["TP Tick"] > self.ability_cooldowns["GCD"]:
                 self.use("Invigorate")
@@ -493,79 +500,176 @@ class Bard:
         self.use_misc()
         self.use_abilities()
 
+    def opener_should_refresh_windbite(self):
+        windbite_timer = self.timers.get_timer("Windbite")
+        if windbite_timer is not None:
+            if windbite_timer.duration < GCD * 3:
+                return True
+            return False
+        return True
+
+    def opener_should_refresh_venomous_bite(self):
+        venomous_bite_timer = self.timers.get_timer("Venomous Bite")
+        if venomous_bite_timer is not None:
+            if venomous_bite_timer.duration < GCD * 3:
+                return True
+            return False
+        return True
+
+    # Choose a GCD to use.
+    def opener_gcd(self):
+        if self.should_refresh_straight_shot():
+            return self.straight_shot()
+        elif self.opener_should_refresh_windbite():
+            return self.windbite()
+        elif self.opener_should_refresh_venomous_bite():
+            return self.venomous_bite()
+        elif self.timers.has_timer("Straighter Shot"):
+            return self.straight_shot()
+        else:
+            return self.heavy_shot()
+
+        return False
+
+    def opener_use_abilities(self):
+        if self.can_use("GCD"):
+            venomous_bite_timer = self.timers.get_timer("Venomous Bite")
+            success = self.opener_gcd()
+            if success:
+                self.ability_cooldowns["GCD"] = self.ABILITIES["GCD"]["cooldown"]
+
+        # Regular animations
+        if self.ability_cooldowns["GCD"] >= SHORT_DELAY:
+            if self.can_use("Flaming Arrow"):
+                self.use("Flaming Arrow")
+
+            if self.can_use("Bloodletter"):
+                self.use("Bloodletter")
+
+            if self.can_use("Repelling Shot"):
+                self.use("Repelling Shot")
+
+            if self.can_use("Blunt Arrow"):
+                self.use("Blunt Arrow")
+
+        venomous_bite_timer = self.timers.get_timer("Venomous Bite")
+        if venomous_bite_timer is not None and venomous_bite_timer.duration == 18:
+            return True
+        else:
+            return False
+
     # Krietor's opener
     # Notation: (skill name, optional)
     def opener(self):
-        opener = [("Hawk's Eye", False),
-                  ("Raging Strikes", False),
-                  ("Bloodletter", False),
-                  ("Straight Shot", False),
-                  ("Blood for Blood", False),
-                  ("Internal Release", False),
-                  ("Windbite", False),
-                  ("X-Potion of Dexterity", False),
-                  ("Barrage", False),
-                  ("Venomous Bite", False),
-                  ("Flaming Arrow", False),
-                  ("Repelling Shot", False),
-                  ("Heavy Shot", False),
-                  ("Blunt Arrow", False),
-                  ("Heavy Shot", False),
-                  ("Heavy Shot", False),
-                  ("Windbite", False),
-                  ("Venomous Bite", False)]
+        opener = ["Hawk's Eye",
+                  "Raging Strikes",
+                  "Bloodletter",
+                  "Straight Shot",
+                  "Blood for Blood",
+                  "Internal Release",
+                  "Windbite",
+                  "X-Potion of Dexterity",
+                  "Barrage",
+                  "Venomous Bite"]
 
         for ability in opener:
-            name = ability[0]
-            optional = ability[1]
-
-            if optional:
+            success = False
+            while not success:
                 self.use_misc()
-                self.use(name)
+                success = self.use(ability)
                 self.process_event()
-            else:
-                success = False
-                while not success:
-                    self.use_misc()
-                    success = self.use(name)
-                    self.process_event()
+
+        # Continue with a modified priority system, then continue with the regular rotation.
+        end = False
+        while not end:
+            self.use_misc()
+            end = self.opener_use_abilities()
+            self.process_event()
+
+    def opener2_should_refresh_windbite(self):
+        windbite_timer = self.timers.get_timer("Windbite")
+        if windbite_timer is not None:
+            if windbite_timer.duration < GCD * 2:
+                return True
+            return False
+        return True
+
+    def opener2_should_refresh_venomous_bite(self):
+        venomous_bite_timer = self.timers.get_timer("Venomous Bite")
+        if venomous_bite_timer is not None:
+            if venomous_bite_timer.duration < GCD * 2:
+                return True
+            return False
+        return True
+
+    # Choose a GCD to use.
+    def opener2_gcd(self):
+        if self.should_refresh_straight_shot():
+            return self.straight_shot()
+        elif self.opener2_should_refresh_windbite():
+            return self.windbite()
+        elif self.opener2_should_refresh_venomous_bite():
+            return self.venomous_bite()
+        elif self.timers.has_timer("Straighter Shot"):
+            return self.straight_shot()
+        else:
+            return self.heavy_shot()
+
+        return False
+
+    def opener2_use_abilities(self):
+        if self.can_use("GCD"):
+            venomous_bite_timer = self.timers.get_timer("Venomous Bite")
+            success = self.opener2_gcd()
+            if success:
+                self.ability_cooldowns["GCD"] = self.ABILITIES["GCD"]["cooldown"]
+
+        # Regular animations
+        if self.ability_cooldowns["GCD"] >= SHORT_DELAY:
+            if self.can_use("Flaming Arrow"):
+                self.use("Flaming Arrow")
+
+            if self.can_use("Bloodletter"):
+                self.use("Bloodletter")
+
+            if self.can_use("Repelling Shot"):
+                self.use("Repelling Shot")
+
+            if self.can_use("Blunt Arrow"):
+                self.use("Blunt Arrow")
+
+        venomous_bite_timer = self.timers.get_timer("Venomous Bite")
+        if venomous_bite_timer is not None and venomous_bite_timer.duration == 18:
+            return True
+        else:
+            return False
 
     # Lazy opener
     def opener2(self):
-        opener = [("Straight Shot", False),
-                  ("Hawk's Eye", False),
-                  ("Internal Release", False),
-                  ("Windbite", False),
-                  ("Blood for Blood", False),
-                  ("Raging Strikes", False),
-                  ("Venomous Bite", False),
-                  ("X-Potion of Dexterity", False),
-                  ("Heavy Shot", False),
-                  ("Barrage", False),
-                  ("Bloodletter", False),
-                  ("Heavy Shot", False),
-                  ("Flaming Arrow", False),
-                  ("Repelling Shot", False),
-                  ("Heavy Shot", False),
-                  ("Blunt Arrow", False),
-                  ("Heavy Shot", False),
-                  ("Windbite", False),
-                  ("Venomous Bite", False)]
+        opener = ["Straight Shot",
+                  "Hawk's Eye",
+                  "Internal Release",
+                  "Windbite",
+                  "Blood for Blood",
+                  "Raging Strikes",
+                  "Venomous Bite",
+                  "X-Potion of Dexterity",
+                  "Heavy Shot",
+                  "Barrage"]
 
         for ability in opener:
-            name = ability[0]
-            optional = ability[1]
-
-            if optional:
+            success = False
+            while not success:
                 self.use_misc()
-                self.use(name)
+                success = self.use(ability)
                 self.process_event()
-            else:
-                success = False
-                while not success:
-                    self.use_misc()
-                    success = self.use(name)
-                    self.process_event()
+
+        # Continue with a modified priority system, then continue with the regular rotation.
+        end = False
+        while not end:
+            self.use_misc()
+            end = self.opener2_use_abilities()
+            self.process_event()
 
     # Parse the spoony bard.
     def parse(self, duration, blah=True):
@@ -582,28 +686,26 @@ class Bard:
 
 # Krietor's opener
 sum_dps = 0
-num_simulations = 1000
+num_simulations = 100
 
 for i in xrange(num_simulations):
     bard = Bard()
     parse_length = 241.4
     potency = bard.parse(parse_length)
-    damage_per_potency = 2.4888
-    sum_dps += potency * damage_per_potency / (parse_length - 1.4)
+    sum_dps += potency * DAMAGE_PER_POTENCY / (parse_length - 1.4)
 
 sum_dps /= num_simulations
 print sum_dps
 
 # Lazy opener
 sum_dps = 0
-num_simulations = 1000
+num_simulations = 100
 
 for i in xrange(num_simulations):
     bard = Bard()
     parse_length = 240
     potency = bard.parse(parse_length, False)
-    damage_per_potency = 2.4888
-    sum_dps += potency * damage_per_potency / 240
+    sum_dps += potency * DAMAGE_PER_POTENCY / 240
 
 sum_dps /= num_simulations
 print sum_dps
