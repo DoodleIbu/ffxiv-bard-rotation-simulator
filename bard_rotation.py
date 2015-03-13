@@ -11,18 +11,12 @@ AUTO_ATTACK_DELAY = 3.04
 CRITICAL_HIT_RATE = 0.197586
 
 class Timer:
-    name = ""
-    duration = 0
-    snapshot = None
-
     def __init__(self, name, duration, snapshot=None):
         self.name = name
         self.duration = duration
         self.snapshot = snapshot
 
 class TimerCollection:
-    timers = []
-
     def get_timer(self, name):
         for timer in self.timers:
             if timer.name == name:
@@ -48,6 +42,9 @@ class TimerCollection:
 
     def __iter__(self):
         return iter(self.timers)
+
+    def __init__(self):
+        self.timers = []
 
 class Job:
     pass
