@@ -1,9 +1,12 @@
 import random
+import sys
 
 # Bard rotation potency calculator.
 # TODO: fix lol code
 #       support opening rotations
 #       associate total potency dealt on enemy
+GCD = 2.45
+AUTO_ATTACK_DELAY = 3.04
 
 class Timer:
     name = ""
@@ -207,6 +210,7 @@ class Bard:
     def auto_attack(self):
         self.total_potency += self.get_modified_normal_potency(88.7)
         if self.timers.has_timer("Barrage"):
+            #print "Triple auto"
             self.total_potency += self.get_modified_normal_potency(88.7)
             self.total_potency += self.get_modified_normal_potency(88.7)
         return True
@@ -217,11 +221,11 @@ class Bard:
         venomous_bite_timer = self.timers.get_timer("Venomous Bite")
 
         if straight_shot_timer is not None:
-            if straight_shot_timer.duration < 2.5:
+            if straight_shot_timer.duration < GCD:
                 return True
-            if windbite_timer is not None and windbite_timer.duration < 5 and straight_shot_timer.duration < 5:
+            if windbite_timer is not None and windbite_timer.duration < 2 * GCD and straight_shot_timer.duration < 2 * GCD:
                 return True
-            if venomous_bite_timer is not None and venomous_bite_timer.duration < 5 and straight_shot_timer.duration < 5:
+            if venomous_bite_timer is not None and venomous_bite_timer.duration < 2 * GCD and straight_shot_timer.duration < 2 * GCD:
                 return True
             return False
 
@@ -230,7 +234,7 @@ class Bard:
     def should_refresh_windbite(self):
         windbite_timer = self.timers.get_timer("Windbite")
         if windbite_timer is not None:
-            if windbite_timer.duration < 2.5:
+            if windbite_timer.duration < GCD:
                 return True
             return False
         return True
@@ -238,7 +242,7 @@ class Bard:
     def should_refresh_venomous_bite(self):
         venomous_bite_timer = self.timers.get_timer("Venomous Bite")
         if venomous_bite_timer is not None:
-            if venomous_bite_timer.duration < 2.5:
+            if venomous_bite_timer.duration < GCD:
                 return True
             return False
         return True
@@ -260,7 +264,7 @@ class Bard:
 
     ABILITIES = {
         "GCD": {
-            "cooldown": 2.5,
+            "cooldown": GCD,
             "effects": gcd
         },
         "Hawk's Eye": {
@@ -319,7 +323,7 @@ class Bard:
             "effects": dot_tick
         },
         "Auto Attack": {
-            "cooldown": 3.04,
+            "cooldown": AUTO_ATTACK_DELAY,
             "effects": auto_attack
         }
     }
@@ -343,7 +347,7 @@ class Bard:
     # misc cooldowns.
     # TODO: lol shitty code
     def process_event(self):
-        time_passed = 10
+        time_passed = sys.maxint
 
         # Animation lock
         if self.animation_lock != 0:
@@ -434,13 +438,14 @@ class Bard:
             if self.can_use("Raging Strikes"):
                 self.use("Raging Strikes")
 
-            if self.can_use("Blood for Blood"):
-                self.use("Blood for Blood")
+            if self.ability_cooldowns["Barrage"] < 10:
+                if self.can_use("Blood for Blood") and self.can_use("Hawk's Eye"):
+                    self.use("Blood for Blood")
 
-            if self.can_use("Hawk's Eye"):
-                self.use("Hawk's Eye")
+                if self.can_use("Hawk's Eye"):
+                    self.use("Hawk's Eye")
 
-            if self.can_use("Barrage"):
+            if self.can_use("Barrage") and self.misc_cooldowns["Auto Attack"] < 10 - (AUTO_ATTACK_DELAY * 3):
                 self.use("Barrage")
 
             if self.can_use("Flaming Arrow"):
