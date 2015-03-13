@@ -5,7 +5,7 @@ import sys
 # TODO: fix lol code
 #       support opening rotations
 #       associate total potency dealt on enemy
-#       support mid-GCD activation of buffs, especially Barrage
+#       support mid-GCD activation of buffs, especially Barrage and Bloodletter spam
 GCD = 2.45
 AUTO_ATTACK_DELAY = 3.04
 CRITICAL_HIT_RATE = 0.197586
@@ -88,64 +88,64 @@ class Bard:
         return self.get_modified_potency(potency, snapshot)
 
     def hawks_eye(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.timers.set_timer("Hawk's Eye", 20)
         return True
 
     def raging_strikes(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.timers.set_timer("Raging Strikes", 20)
         return True
 
     def internal_release(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.timers.set_timer("Internal Release", 15)
         return True
 
     def barrage(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.timers.set_timer("Barrage", 10)
         return True
 
     def blood_for_blood(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.timers.set_timer("Blood for Blood", 20)
         return True
 
     def x_potion_of_dexterity(self):
-        self.animation_lock = 1.2
+        self.animation_lock = 1.1
         self.timers.set_timer("X-Potion of Dexterity", 15)
         return True
 
     def flaming_arrow(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.timers.set_timer("Flaming Arrow", 30, self.timers.create_snapshot())
         return True
 
     def blunt_arrow(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.total_potency += self.get_modified_normal_potency(50)
         return True
 
     def repelling_shot(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.total_potency += self.get_modified_normal_potency(80)
         return True
 
     def bloodletter(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.total_potency += self.get_modified_normal_potency(150)
         return True
 
     def invigorate(self):
-        self.animation_lock = 0.8
+        self.animation_lock = 0.7
         self.tp = min(self.tp + 400, 1000)
         return True
 
     def heavy_shot(self):
         if self.tp >= 60:
             self.tp -= 60
-            self.animation_lock = 0.8
+            self.animation_lock = 1.0
             self.total_potency += self.get_modified_normal_potency(150)
             if random.random() < 0.2:
                 self.timers.set_timer("Straighter Shot", 10)
@@ -155,7 +155,7 @@ class Bard:
     def straight_shot(self):
         if self.tp >= 70:
             self.tp -= 70
-            self.animation_lock = 0.8
+            self.animation_lock = 1.0
             if self.timers.has_timer("Straighter Shot"):
                 self.total_potency += self.get_modified_normal_potency(140, True)
                 self.timers.delete_timer("Straighter Shot")
@@ -169,7 +169,7 @@ class Bard:
     def windbite(self):
         if self.tp >= 80:
             self.tp -= 80
-            self.animation_lock = 0.8
+            self.animation_lock = 1.0
             self.total_potency += self.get_modified_normal_potency(60)
             self.timers.set_timer("Windbite", 18, self.timers.create_snapshot())
             return True
@@ -178,7 +178,7 @@ class Bard:
     def venomous_bite(self):
         if self.tp >= 80:
             self.tp -= 80
-            self.animation_lock = 0.8
+            self.animation_lock = 1.0
             self.total_potency += self.get_modified_normal_potency(100)
             self.timers.set_timer("Venomous Bite", 18, self.timers.create_snapshot())
             return True
@@ -212,7 +212,6 @@ class Bard:
     def auto_attack(self):
         self.total_potency += self.get_modified_normal_potency(88.7)
         if self.timers.has_timer("Barrage"):
-            #print "Triple auto"
             self.total_potency += self.get_modified_normal_potency(88.7)
             self.total_potency += self.get_modified_normal_potency(88.7)
         return True
@@ -330,16 +329,14 @@ class Bard:
         }
     }
 
-    # States while attacking.
-    total_potency = 0
-    tp = 1000
-    time = 0
-    animation_lock = 0
-    ability_cooldowns = {}
-    misc_cooldowns = {}
-    timers = TimerCollection()
-
     def __init__(self):
+        self.total_potency = 0
+        self.tp = 1000
+        self.time = 0
+        self.animation_lock = 0
+        self.ability_cooldowns = {}
+        self.misc_cooldowns = {}
+        self.timers = TimerCollection()
         for name, values in self.ABILITIES.iteritems():
             self.ability_cooldowns[name] = 0
         for name, values in self.MISC.iteritems():
@@ -413,12 +410,36 @@ class Bard:
         return False
 
     def use(self, name):
-        if self.can_use(name):
+        # print "%s -- %.3f" % (name, self.ability_cooldowns["GCD"])
+        # Straight shot, etc. Need to clean this up
+        if name == "Straight Shot" and self.can_use("GCD"):
+            success = self.straight_shot()
+            if success:
+                self.ability_cooldowns["GCD"] = self.ABILITIES["GCD"]["cooldown"]
+            return success
+        elif name == "Heavy Shot" and self.can_use("GCD"):
+            success = self.heavy_shot()
+            if success:
+                self.ability_cooldowns["GCD"] = self.ABILITIES["GCD"]["cooldown"]
+            return success
+        elif name == "Windbite" and self.can_use("GCD"):
+            success = self.windbite()
+            if success:
+                self.ability_cooldowns["GCD"] = self.ABILITIES["GCD"]["cooldown"]
+            return success
+        elif name == "Venomous Bite" and self.can_use("GCD"):
+            success = self.venomous_bite()
+            if success:
+                self.ability_cooldowns["GCD"] = self.ABILITIES["GCD"]["cooldown"]
+            return success
+        elif name in self.ABILITIES and self.can_use(name):
             success = self.ABILITIES[name]["effects"](self)
             if success:
                 self.ability_cooldowns[name] = self.ABILITIES[name]["cooldown"]
-    
-    # USE EVERYTHING ASAP
+            return success
+
+        return False
+
     def use_abilities(self):
         if self.can_use("GCD"):
             self.use("GCD")
@@ -475,23 +496,118 @@ class Bard:
         self.use_misc()
         self.use_abilities()
 
+    # Krietor's opener
+    # Notation: (skill name, optional)
+    def opener(self):
+        opener = [("Hawk's Eye", False),
+                  ("Raging Strikes", False),
+                  ("Bloodletter", False),
+                  ("Straight Shot", False),
+                  ("Blood for Blood", False),
+                  ("Internal Release", False),
+                  ("Windbite", False),
+                  ("X-Potion of Dexterity", False),
+                  ("Barrage", False),
+                  ("Venomous Bite", False),
+                  ("Flaming Arrow", False),
+                  ("Repelling Shot", False),
+                  ("Heavy Shot", False),
+                  ("Blunt Arrow", False),
+                  ("Heavy Shot", False),
+                  ("Heavy Shot", False),
+                  ("Windbite", False),
+                  ("Venomous Bite", False)]
+
+        for ability in opener:
+            name = ability[0]
+            optional = ability[1]
+
+            if optional:
+                self.use_misc()
+                self.use(name)
+                self.process_event()
+            else:
+                success = False
+                while not success:
+                    self.use_misc()
+                    success = self.use(name)
+                    self.process_event()
+
+    # Lazy opener
+    def opener2(self):
+        opener = [("Straight Shot", False),
+                  ("Hawk's Eye", False),
+                  ("Internal Release", False),
+                  ("Windbite", False),
+                  ("Blood for Blood", False),
+                  ("Raging Strikes", False),
+                  ("Venomous Bite", False),
+                  ("X-Potion of Dexterity", False),
+                  ("Heavy Shot", False),
+                  ("Barrage", False),
+                  ("Bloodletter", False),
+                  ("Heavy Shot", False),
+                  ("Flaming Arrow", False),
+                  ("Repelling Shot", False),
+                  ("Heavy Shot", False),
+                  ("Blunt Arrow", False),
+                  ("Heavy Shot", False),
+                  ("Windbite", False),
+                  ("Venomous Bite", False)]
+
+        for ability in opener:
+            name = ability[0]
+            optional = ability[1]
+
+            if optional:
+                self.use_misc()
+                self.use(name)
+                self.process_event()
+            else:
+                success = False
+                while not success:
+                    self.use_misc()
+                    success = self.use(name)
+                    self.process_event()
+
     # Parse the spoony bard.
-    def parse(self, duration):
+    def parse(self, duration, blah=True):
+        if blah:
+            self.opener()
+        else:
+            self.opener2()
+
         while self.time < duration:
             self.act()
             self.process_event()
 
         return self.total_potency
 
+# Krietor's opener
+sum_dps = 0
+num_simulations = 1000
+
+for i in xrange(num_simulations):
+    bard = Bard()
+    parse_length = 241.4
+    potency = bard.parse(parse_length)
+    damage_per_potency = 2.4888
+    sum_dps += potency * damage_per_potency / (parse_length - 1.4)
+
+sum_dps /= num_simulations
+print sum_dps
+
+# Lazy opener
 sum_dps = 0
 num_simulations = 1000
 
 for i in xrange(num_simulations):
     bard = Bard()
     parse_length = 240
-    potency = bard.parse(parse_length)
+    potency = bard.parse(parse_length, False)
     damage_per_potency = 2.4888
-    sum_dps += potency * damage_per_potency / parse_length
+    sum_dps += potency * damage_per_potency / 240
 
 sum_dps /= num_simulations
 print sum_dps
+
