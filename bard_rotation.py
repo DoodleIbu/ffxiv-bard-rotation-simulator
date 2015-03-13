@@ -5,8 +5,10 @@ import sys
 # TODO: fix lol code
 #       support opening rotations
 #       associate total potency dealt on enemy
+#       support mid-GCD activation of buffs, especially Barrage
 GCD = 2.45
 AUTO_ATTACK_DELAY = 3.04
+CRITICAL_HIT_RATE = 0.197586
 
 class Timer:
     name = ""
@@ -53,14 +55,14 @@ class Job:
 class Bard:
 
     def get_modified_potency(self, potency, timers, guaranteed_critical=False):
-        critical_rate = 0.2
+        critical_hit_rate = CRITICAL_HIT_RATE
         potency_modifier = 1.0
 
         if timers is not None:
             if timers.has_timer("Straight Shot"):
-                critical_rate += 0.1
+                critical_hit_rate += 0.1
             if timers.has_timer("Internal Release"):
-                critical_rate += 0.1
+                critical_hit_rate += 0.1
             if timers.has_timer("Hawk's Eye"):
                 potency_modifier *= 1.13 # Approximately?
             if timers.has_timer("Raging Strikes"):
@@ -71,7 +73,7 @@ class Bard:
                 potency_modifier *= 1.11 # Approximately?
 
         critical = False
-        if random.random() < critical_rate or guaranteed_critical:
+        if random.random() < critical_hit_rate or guaranteed_critical:
             critical = True
 
         total_potency = (potency \
@@ -432,13 +434,21 @@ class Bard:
                self.misc_cooldowns["TP Tick"] > self.ability_cooldowns["GCD"]:
                 self.use("Invigorate")
 
-            if self.can_use("Internal Release"):
+            # Time internal release so that both dots get the critical bonus.
+            windbite_timer = self.timers.get_timer("Windbite")
+            venomous_bite_timer = self.timers.get_timer("Venomous Bite")
+            use_internal_release = False
+            if (windbite_timer is None or windbite_timer.duration < 15) and \
+               (venomous_bite_timer is None or venomous_bite_timer.duration < 15):
+               use_internal_release = True
+
+            if self.can_use("Internal Release") and use_internal_release:
                 self.use("Internal Release")
 
             if self.can_use("Raging Strikes"):
                 self.use("Raging Strikes")
 
-            if self.ability_cooldowns["Barrage"] < 10:
+            if self.ability_cooldowns["Barrage"] < 8:
                 if self.can_use("Blood for Blood") and self.can_use("Hawk's Eye"):
                     self.use("Blood for Blood")
 
