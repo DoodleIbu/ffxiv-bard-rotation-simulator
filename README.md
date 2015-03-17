@@ -1,4 +1,4 @@
-# ffxiv-rotation-calculator
+# ffxiv-bard-rotation-simulator
 Calculates Bard rotation damage.
 
 ## TODO
