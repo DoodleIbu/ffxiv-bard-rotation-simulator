@@ -14,12 +14,12 @@ GCD_DELAY = 1.0
 class DamageHelper:
 
     @staticmethod
-    def calculate_damage(potency, source, **kwargs):
+    def _calculate_damage(potency, source, auras, **kwargs):
         potency_modifier = 1.0
-        critical_hit_rate = source.base_critical_hit_rate
+        critical_hit_rate = source.base_critical_hit_rate # Might be snapshotted, but it's pretty pointless to simulate that
 
-        for aura_tuple in source.auras.keys():
-            cls = aura_tuple[0]
+        for aura in auras:
+            cls = aura[0]
             result = cls.damage_modifier()
             potency_modifier *= result.get("potency_multiply", 1.0)
             critical_hit_rate += result.get("critical_hit_rate_add", 0.0)
@@ -34,25 +34,12 @@ class DamageHelper:
         }
 
     @staticmethod
+    def calculate_damage(potency, source, **kwargs):
+        return DamageHelper._calculate_damage(potency, source, source.auras.keys(), **kwargs)
+
+    @staticmethod
     def calculate_dot_damage(potency, source, target, aura, **kwargs):
-        potency_modifier = 1.0
-        critical_hit_rate = source.base_critical_hit_rate
-
-        aura_timer = target.auras.get((aura, source), None)
-        for aura_tuple in aura_timer.snapshot:
-            cls = aura_tuple[0]
-            result = cls.damage_modifier()
-            potency_modifier *= result.get("potency_multiply", 1.0)
-            critical_hit_rate += result.get("critical_hit_rate_add", 0.0)
-
-        critical_hit = False
-        if random.random() < critical_hit_rate:
-            critical_hit = True
-
-        return {
-            "potency": potency * potency_modifier * (1 + critical_hit * 0.5),
-            "critical_hit": critical_hit
-        }
+        return DamageHelper._calculate_damage(potency, source, target.auras[(aura, source)].snapshot, **kwargs)
 
 # Data on auras
 # TODO: Consider stacking and overwritable auras
@@ -333,7 +320,11 @@ class AuraTimer:
 
 class Actor:
     def __init__(self):
-        self.auras = {} # key is (aura class, source actor)
+        self.auras = {} # keys are (aura class, source actor)
+        self.cooldowns = {}
+        self.gcd_timer = 0 # time until next GCD
+        self.aa_timer = 0 # time until next auto attack
+
         self.job = None
         self.tp = 1000
         self.damage = 0 # Damage inflicted on actor
