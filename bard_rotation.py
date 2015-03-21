@@ -21,10 +21,8 @@ class DamageHelper:
         for aura_tuple in source.auras.keys():
             cls = aura_tuple[0]
             result = cls.damage_modifier()
-            if "potency_multiply" in result:
-                potency_modifier *= result["potency_multiply"]
-            if "critical_hit_rate_add" in result:
-                critical_hit_rate += result["critical_hit_rate_add"]
+            potency_modifier *= result.get("potency_multiply", 1.0)
+            critical_hit_rate += result.get("critical_hit_rate_add", 0.0)
 
         critical_hit = False
         if random.random() < critical_hit_rate or kwargs.get("guaranteed_critical", False) is True:
@@ -44,10 +42,8 @@ class DamageHelper:
         for aura_tuple in aura_timer.snapshot:
             cls = aura_tuple[0]
             result = cls.damage_modifier()
-            if "potency_multiply" in result:
-                potency_modifier *= result["potency_multiply"]
-            if "critical_hit_rate_add" in result:
-                critical_hit_rate += result
+            potency_modifier *= result.get("potency_multiply", 1.0)
+            critical_hit_rate += result.get("critical_hit_rate_add", 0.0)
 
         critical_hit = False
         if random.random() < critical_hit_rate:
@@ -175,7 +171,6 @@ class WindbiteAura(Aura):
     @staticmethod
     def tick(source, target):
         result = DamageHelper.calculate_dot_damage(45, source, target, WindbiteAura)
-        print DamageHelper.calculate_dot_damage(45, source, target, WindbiteAura)
         target.add_damage(result["potency"])
         if result["critical_hit"] is True and random.random() < 0.5:
             source.set_cooldown(Bloodletter, 0)
@@ -263,7 +258,7 @@ class StraightShot(Skill):
 
     @staticmethod
     def use(source, target):
-        if source.has_aura(StriaghterShotAura):
+        if source.has_aura(StraighterShotAura):
             source.remove_aura(StraighterShotAura)
             target.add_damage(DamageHelper.calculate_damage(140, source, { "guaranteed_critical": True })["potency"])
         else:
@@ -377,11 +372,14 @@ class Actor:
     def add_damage(self, potency):
         self.damage += potency
 
-    def add_tp(value):
+    def add_tp(self, value):
         if value >= 0:
             self.tp = min(self.tp + value, 1000)
         else:
             self.tp = max(self.tp - value, 0)
+
+    def set_cooldown(self, aura, time):
+        pass
 
 class Simulation:
     def __init__(self):
@@ -391,6 +389,8 @@ source = Actor()
 target = Actor()
 RagingStrikes.use(source, target)
 BloodForBlood.use(source, target)
+StraightShot.use(source, target)
 HeavyShot.use(source, target)
 Windbite.use(source, target)
 WindbiteAura.tick(source, target)
+print target.damage
