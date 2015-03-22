@@ -3,8 +3,9 @@ class AuraTimer:
         self.duration = duration
         self.snapshot = snapshot
 
+# Dumb slate for a character or enemy.
 class Actor:
-    def __init__(self, job, rotation=None):
+    def __init__(self, job):
         self.job = job
 
         # Initialize cooldown durations on actor
@@ -19,7 +20,6 @@ class Actor:
         self.tp = 1000
         self.potency = 0 # Damage inflicted on actor in terms of potency.
                          # Actual damage = self.potency * self.damage_per_potency
-        self.rotation = rotation
 
         # Static parameters that should be passed into the actor
         self.base_critical_hit_rate = 0.197586
@@ -70,7 +70,3 @@ class Actor:
     def set_cooldown(self, skill, time):
         if skill in self.cooldowns:
             self.cooldowns[skill] = time
-
-    # Gets the amount of time that needs to pass until something important happens.
-    def get_time_of_interest(self):
-        time_of_interest = sys.maxint
