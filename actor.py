@@ -31,6 +31,9 @@ class Actor:
         self.gcd_cooldown = 2.45
         self.damage_per_potency = 2.4888 # TODO: associate potency damage on enemies with source
 
+        # For time of interest purposes to check if a cooldown has been reset.
+        self.check_now = True
+
     def snapshot(self):
         return self.auras.keys()
 
@@ -88,15 +91,22 @@ class Actor:
             self.tp = max(self.tp + value, 0)
 
     def set_cooldown(self, skill, time):
+        if time == 0:
+            self.check_now = True
+
         if skill in self.cooldowns:
-            self.cooldowns[skill] = max(time, 0)
+            self.cooldowns[skill] = time
 
     # Gets the amount of time that needs to pass until something important happens.
     def get_time_of_interest(self):
+        if self.check_now:
+            self.check_now = False
+            return 0
+
         times = [sys.maxint, self.gcd_timer, self.aa_timer, self.animation_lock] \
               + [aura.duration for aura in self.auras.values()] \
               + self.cooldowns.values()
-        times = [time for time in times if time != 0] # Bloodletter procs?
+        times = [time for time in times if time != 0]
 
         return min(times)
 
@@ -116,7 +126,7 @@ class Actor:
             del self.auras[aura_to_remove]
 
         for cooldown in self.cooldowns.keys():
-            self.set_cooldown(cooldown, self.cooldowns[cooldown] - time)
+            self.cooldowns[cooldown] = max(self.cooldowns[cooldown] - time, 0)
 
     def use(self, skill, target=None):
         if target is None:

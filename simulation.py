@@ -37,14 +37,13 @@ class Simulation:
             self.tick()
 
             time_of_interest = self.get_time_of_interest()
-            time_of_interest = min(0.05, time_of_interest)
 
             self.advance_time(time_of_interest)
             self.player.advance_time(time_of_interest)
             self.enemy.advance_time(time_of_interest)
 
 total_damage = 0
-trials = 1000
+trials = 100
 duration = 240
 
 for i in xrange(0, trials):
