@@ -23,7 +23,7 @@ class BardRotation(Rotation):
     @staticmethod
     def use_skill(simulation, player, enemy):
         if player.aa_ready():
-            player.auto_attack(enemy)
+            player.use(AutoAttack, enemy)
 
         if player.gcd_ready():
 
@@ -61,25 +61,38 @@ class BardRotation(Rotation):
                 player.use(XPotionOfDexterity)
 
         if player.gcd_timer >= SHORT_DELAY:
+
             if player.can_use(Invigorate) and (player.tp <= 600 and simulation.tick_timer > player.gcd_timer) or \
                player.tp <= 540:
                 player.use(Invigorate)
-            if player.can_use(InternalRelease):
+
+            use_internal_release = enemy.aura_duration(WindbiteAura, player) < 15 \
+                               and enemy.aura_duration(VenomousBiteAura, player) < 15
+
+            if player.can_use(InternalRelease) and use_internal_release:
                 player.use(InternalRelease)
+
             if player.can_use(RagingStrikes):
                 player.use(RagingStrikes)
+
             if player.cooldown_duration(Barrage) < 8:
                 if player.can_use(BloodForBlood) and player.can_use(HawksEye):
                     player.use(BloodForBlood)
+
                 if player.can_use(HawksEye):
                     player.use(HawksEye)
+
             if player.can_use(Barrage) and player.aa_timer < 10 - player.aa_cooldown * 3:
                 player.use(Barrage)
+
             if player.can_use(FlamingArrow):
                 player.use(FlamingArrow, enemy)
+
             if player.can_use(Bloodletter):
                 player.use(Bloodletter, enemy)
+
             if player.can_use(RepellingShot):
                 player.use(RepellingShot, enemy)
+
             if player.can_use(BluntArrow):
                 player.use(BluntArrow, enemy)

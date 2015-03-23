@@ -292,3 +292,16 @@ class Invigorate(Skill):
     @staticmethod
     def use(source, target):
         source.add_tp(400)
+
+class AutoAttack(Skill):
+    name = "Auto Attack"
+    animation_lock = 0
+
+    @staticmethod
+    def use(source, target):
+        auto_attacks = 1
+        if source.has_aura(BarrageAura):
+            auto_attacks = 3
+
+        for i in xrange(0, auto_attacks):
+            target.add_potency(DamageHelper.calculate_potency(88.7, source)["potency"])

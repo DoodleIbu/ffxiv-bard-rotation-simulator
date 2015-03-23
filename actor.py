@@ -1,5 +1,4 @@
 import sys
-from damagehelper import *
 from skill import *
 
 class AuraTimer:
@@ -62,6 +61,7 @@ class Actor:
         else:
             return False
 
+    # Returns 0 if aura does not exist.
     def aura_duration(self, aura, source=None):
         if source is None:
             source = self
@@ -93,9 +93,10 @@ class Actor:
 
     # Gets the amount of time that needs to pass until something important happens.
     def get_time_of_interest(self):
-        times = [self.gcd_timer, self.aa_timer, self.animation_lock] \
+        times = [sys.maxint, self.gcd_timer, self.aa_timer, self.animation_lock] \
               + [aura.duration for aura in self.auras.values()] \
               + self.cooldowns.values()
+        times = [time for time in times if time != 0] # Bloodletter procs?
 
         return min(times)
 
@@ -121,7 +122,11 @@ class Actor:
         if target is None:
             target = self
 
-        if self.can_use(skill):
+        if skill == AutoAttack:
+            skill.use(self, target)
+            self.aa_timer = self.aa_cooldown
+
+        elif self.can_use(skill):
             skill.use(self, target)
             self.animation_lock = skill.animation_lock
             if skill.is_off_gcd:
@@ -149,14 +154,3 @@ class Actor:
 
     def aa_ready(self):
         return self.aa_timer == 0
-
-    def auto_attack(self, target):
-        if self.aa_ready():
-            auto_attacks = 1
-            if self.has_aura(BarrageAura):
-                auto_attacks = 3
-
-            for i in xrange(0, auto_attacks):
-                target.add_potency(DamageHelper.calculate_potency(88, self)["potency"])
-
-            self.aa_timer = self.aa_cooldown

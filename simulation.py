@@ -37,16 +37,14 @@ class Simulation:
             self.tick()
 
             time_of_interest = self.get_time_of_interest()
-            # THIS IS WRONG!
-            if time_of_interest == 0:
-                time_of_interest = 0.01 # Advance 0.01 sec if things don't appear to be moving
+            time_of_interest = min(0.05, time_of_interest)
 
             self.advance_time(time_of_interest)
             self.player.advance_time(time_of_interest)
             self.enemy.advance_time(time_of_interest)
 
 total_damage = 0
-trials = 100
+trials = 1000
 duration = 240
 
 for i in xrange(0, trials):
