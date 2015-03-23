@@ -131,6 +131,7 @@ class Skill:
     animation_lock = 0
     cooldown = 0
     tp_cost = 0
+    is_off_gcd = False
 
     @staticmethod
     def use(source, target):
@@ -140,6 +141,7 @@ class InternalRelease(Skill):
     name = "Internal Release"
     animation_lock = SHORT_DELAY
     cooldown = 60
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -149,6 +151,7 @@ class BloodForBlood(Skill):
     name = "Blood for Blood"
     animation_lock = SHORT_DELAY
     cooldown = 80
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -158,6 +161,7 @@ class RagingStrikes(Skill):
     name = "Raging Strikes"
     animation_lock = SHORT_DELAY
     cooldown = 120
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -167,6 +171,7 @@ class HawksEye(Skill):
     name = "Hawk's Eye"
     animation_lock = SHORT_DELAY
     cooldown = 90
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -176,6 +181,7 @@ class Barrage(Skill):
     name = "Barrage"
     animation_lock = SHORT_DELAY
     cooldown = 90
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -185,6 +191,7 @@ class XPotionOfDexterity(Skill):
     name = "X-Potion of Dexterity"
     animation_lock = LONG_DELAY
     cooldown = 270
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -238,6 +245,7 @@ class Windbite(Skill):
 class FlamingArrow(Skill): 
     name = "Flaming Arrow"
     animation_lock = SHORT_DELAY
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -246,6 +254,7 @@ class FlamingArrow(Skill):
 class BluntArrow(Skill):
     name = "Blunt Arrow"
     animation_lock = SHORT_DELAY
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -255,6 +264,7 @@ class BluntArrow(Skill):
 class RepellingShot(Skill):
     name = "Repelling Shot"
     animation_lock = SHORT_DELAY
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -263,6 +273,7 @@ class RepellingShot(Skill):
 class Bloodletter(Skill):
     name = "Bloodletter"
     animation_lock = SHORT_DELAY
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):
@@ -271,6 +282,7 @@ class Bloodletter(Skill):
 class Invigorate(Skill):
     name = "Invigorate"
     animation_lock = SHORT_DELAY
+    is_off_gcd = True
 
     @staticmethod
     def use(source, target):

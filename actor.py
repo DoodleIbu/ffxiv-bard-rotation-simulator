@@ -68,7 +68,7 @@ class Actor:
         if value >= 0:
             self.tp = min(self.tp + value, 1000)
         else:
-            self.tp = max(self.tp - value, 0)
+            self.tp = max(self.tp + value, 0)
 
     def set_cooldown(self, skill, time):
         if skill in self.cooldowns:
@@ -83,7 +83,47 @@ class Actor:
             times += [rotation.get_time_of_interest(self)]
 
         times += [self.gcd_timer, self.aa_timer, self.animation_lock] \
-               + [aura.duration for aura in self.auras] \
+               + [aura.duration for aura in self.auras.values()] \
                + self.cooldowns.values()
 
         return min(times)
+
+    # Advances time.
+    def advance_time(self, time):
+        self.gcd_timer = max(self.gcd_timer - time, 0)
+        self.aa_timer = max(self.aa_timer - time, 0)
+        self.animation_lock = max(self.animation_lock - time, 0)
+
+        auras_to_remove = []
+        for aura_tuple, aura_timer in self.auras.iteritems():
+            aura_timer.duration = max(aura_timer.duration - time, 0)
+            if aura_timer.duration == 0:
+                auras_to_remove.append((aura_tuple[0], aura_tuple[1]))
+
+        for aura_to_remove in auras_to_remove:
+            del self.auras[aura_to_remove]
+
+        for cooldown in self.cooldowns.keys():
+            self.cooldowns[cooldown] = max(self.cooldowns[cooldown] - time, 0)
+
+    def use_skill(self, skill, target):
+        if self.can_use_skill(skill):
+            skill.use(self, target)
+            if skill.is_off_gcd:
+                self.cooldowns[skill] = skill.cooldown
+            else:
+                self.add_tp(-1 * skill.tp_cost)
+                self.gcd_timer = self.gcd_cooldown
+
+    # Currently assumes the actor has access to the skill.
+    def can_use_skill(self, skill):
+        if skill.is_off_gcd:
+            return self.cooldowns[skill] == 0
+        else:
+            return self.gcd_timer == 0 and self.tp >= skill.tp_cost
+
+    # Includes DoT ticks and TP ticks
+    def tick(self):
+        self.add_tp(60)
+        for aura_tuple in self.auras.keys():
+            aura_tuple[0].tick(aura_tuple[1], self)
