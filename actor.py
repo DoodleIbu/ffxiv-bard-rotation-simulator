@@ -1,3 +1,5 @@
+import sys
+
 class AuraTimer:
     def __init__(self, duration=0, snapshot=[]):
         self.duration = duration
@@ -14,9 +16,10 @@ class Actor:
             for skill in job.skills:
                 self.cooldowns[skill] = 0
 
-        self.auras = {} # keys are (aura class, source actor)
-        self.gcd_timer = 0 # time until next GCD
-        self.aa_timer = 0 # time until next auto attack
+        self.auras = {}         # keys are (aura class, source actor)
+        self.gcd_timer = 0      # time until next GCD
+        self.aa_timer = 0       # time until next auto attack
+        self.animation_lock = 0 # time until animation lock is finished
         self.tp = 1000
         self.potency = 0 # Damage inflicted on actor in terms of potency.
                          # Actual damage = self.potency * self.damage_per_potency
@@ -70,3 +73,17 @@ class Actor:
     def set_cooldown(self, skill, time):
         if skill in self.cooldowns:
             self.cooldowns[skill] = time
+
+    # Gets the amount of time that needs to pass until something important happens.
+    def get_time_of_interest(self, rotation=None):
+        times = []
+
+        # If the rotation needs to look at a particular time, e.g. quad Barrage timing
+        if rotation is not None:
+            times += [rotation.get_time_of_interest(self)]
+
+        times += [self.gcd_timer, self.aa_timer, self.animation_lock] \
+               + [aura.duration for aura in self.auras] \
+               + self.cooldowns.values()
+
+        return min(times)

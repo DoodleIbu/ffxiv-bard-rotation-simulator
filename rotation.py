@@ -1,7 +1,9 @@
+import sys
+
 class Rotation:
     @staticmethod
     def get_time_of_interest(actor):
-        pass
+        return sys.maxint
 
     @staticmethod
     def get_rotation(actor):
@@ -10,7 +12,7 @@ class Rotation:
 class BardRotation(Rotation):
     @staticmethod
     def get_time_of_interest(actor):
-        pass
+        return sys.maxint
 
     @staticmethod
     def get_rotation(actor):

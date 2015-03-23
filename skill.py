@@ -88,7 +88,7 @@ class XPotionOfDexterityAura(Aura):
     @staticmethod
     def potency_modifier():
         return {
-            "potency_multiply": 1.11 # about
+            "potency_multiply": 1.11 # about. Hawk's Eye also affects X-Pot bonuses (i.e. it's multiplicative)
         }
 
 class FlamingArrowAura(Aura):
