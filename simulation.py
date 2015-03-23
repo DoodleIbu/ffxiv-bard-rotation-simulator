@@ -16,8 +16,9 @@ class Simulation:
 
     # Gets the amount of time that needs to pass until something important happens.
     def get_time_of_interest(self):
-        return min(self.tick_timer, self.player.get_time_of_interest(self.rotation),
-                                    self.enemy.get_time_of_interest())
+        return min(self.tick_timer, self.player.get_time_of_interest(),
+                                    self.enemy.get_time_of_interest(),
+                                    self.rotation.get_time_of_interest(self, self.player))
 
     def advance_time(self, time):
         self.time += time
@@ -32,20 +33,24 @@ class Simulation:
     # How should I prevent double checking of time?
     def run(self):
         while self.time < self.duration:
-            self.rotation.use_skill(self.player, self.enemy)
+            self.rotation.use_skill(self, self.player, self.enemy)
             self.tick()
 
             time_of_interest = self.get_time_of_interest()
             if time_of_interest == 0:
-                time_of_interest = 0.1 # Advance 0.1 sec if things don't appear to be moving
+                time_of_interest = 0.05 # Advance 0.05 sec if things don't appear to be moving
 
             self.advance_time(time_of_interest)
             self.player.advance_time(time_of_interest)
             self.enemy.advance_time(time_of_interest)
 
-for i in xrange(0, 100):
+total_damage = 0
+trials = 100
+for i in xrange(0, trials):
     player = Actor(Bard)
     enemy = Actor(None)
     simulation = Simulation(player, enemy, 240, BardRotation)
     simulation.run()
-    print enemy.potency
+    total_damage += enemy.potency * player.damage_per_potency / 240
+
+print total_damage / trials

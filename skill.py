@@ -217,7 +217,7 @@ class StraightShot(Skill):
     def use(source, target):
         if source.has_aura(StraighterShotAura):
             source.remove_aura(StraighterShotAura)
-            target.add_potency(DamageHelper.calculate_potency(140, source, { "guaranteed_critical": True })["potency"])
+            target.add_potency(DamageHelper.calculate_potency(140, source, guaranteed_critical=True)["potency"])
         else:
             target.add_potency(DamageHelper.calculate_potency(140, source)["potency"])
         source.add_aura(StraightShotAura)
@@ -245,6 +245,7 @@ class Windbite(Skill):
 class FlamingArrow(Skill): 
     name = "Flaming Arrow"
     animation_lock = SHORT_DELAY
+    cooldown = 60
     is_off_gcd = True
 
     @staticmethod
@@ -254,6 +255,7 @@ class FlamingArrow(Skill):
 class BluntArrow(Skill):
     name = "Blunt Arrow"
     animation_lock = SHORT_DELAY
+    cooldown = 30
     is_off_gcd = True
 
     @staticmethod
@@ -264,6 +266,7 @@ class BluntArrow(Skill):
 class RepellingShot(Skill):
     name = "Repelling Shot"
     animation_lock = SHORT_DELAY
+    cooldown = 30
     is_off_gcd = True
 
     @staticmethod
@@ -273,6 +276,7 @@ class RepellingShot(Skill):
 class Bloodletter(Skill):
     name = "Bloodletter"
     animation_lock = SHORT_DELAY
+    cooldown = 15
     is_off_gcd = True
 
     @staticmethod
@@ -282,6 +286,7 @@ class Bloodletter(Skill):
 class Invigorate(Skill):
     name = "Invigorate"
     animation_lock = SHORT_DELAY
+    cooldown = 120
     is_off_gcd = True
 
     @staticmethod

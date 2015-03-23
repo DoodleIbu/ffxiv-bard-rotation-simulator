@@ -1,4 +1,6 @@
 import sys
+from damagehelper import *
+from skill import *
 
 class AuraTimer:
     def __init__(self, duration=0, snapshot=[]):
@@ -60,6 +62,21 @@ class Actor:
         else:
             return False
 
+    def aura_duration(self, aura, source=None):
+        if source is None:
+            source = self
+
+        if (aura, source) in self.auras:
+            return self.auras[(aura, source)].duration
+        else:
+            return 0
+
+    def cooldown_duration(self, skill):
+        if skill in self.cooldowns:
+            return self.cooldowns[skill]
+        else:
+            return sys.maxint
+
     # Adds damage in terms of potency.
     def add_potency(self, potency):
         self.potency += potency
@@ -72,19 +89,13 @@ class Actor:
 
     def set_cooldown(self, skill, time):
         if skill in self.cooldowns:
-            self.cooldowns[skill] = time
+            self.cooldowns[skill] = max(time, 0)
 
     # Gets the amount of time that needs to pass until something important happens.
-    def get_time_of_interest(self, rotation=None):
-        times = []
-
-        # If the rotation needs to look at a particular time, e.g. quad Barrage timing
-        if rotation is not None:
-            times += [rotation.get_time_of_interest(self)]
-
-        times += [self.gcd_timer, self.aa_timer, self.animation_lock] \
-               + [aura.duration for aura in self.auras.values()] \
-               + self.cooldowns.values()
+    def get_time_of_interest(self):
+        times = [self.gcd_timer, self.aa_timer, self.animation_lock] \
+              + [aura.duration for aura in self.auras.values()] \
+              + self.cooldowns.values()
 
         return min(times)
 
@@ -104,11 +115,15 @@ class Actor:
             del self.auras[aura_to_remove]
 
         for cooldown in self.cooldowns.keys():
-            self.cooldowns[cooldown] = max(self.cooldowns[cooldown] - time, 0)
+            self.set_cooldown(cooldown, self.cooldowns[cooldown] - time)
 
-    def use_skill(self, skill, target):
-        if self.can_use_skill(skill):
+    def use(self, skill, target=None):
+        if target is None:
+            target = self
+
+        if self.can_use(skill):
             skill.use(self, target)
+            self.animation_lock = skill.animation_lock
             if skill.is_off_gcd:
                 self.cooldowns[skill] = skill.cooldown
             else:
@@ -116,14 +131,32 @@ class Actor:
                 self.gcd_timer = self.gcd_cooldown
 
     # Currently assumes the actor has access to the skill.
-    def can_use_skill(self, skill):
-        if skill.is_off_gcd:
-            return self.cooldowns[skill] == 0
-        else:
-            return self.gcd_timer == 0 and self.tp >= skill.tp_cost
+    def can_use(self, skill):
+        if self.animation_lock == 0:
+            if skill.is_off_gcd:
+                return self.cooldowns[skill] == 0
+            else:
+                return self.gcd_timer == 0 and self.tp >= skill.tp_cost
 
     # Includes DoT ticks and TP ticks
     def tick(self):
         self.add_tp(60)
         for aura_tuple in self.auras.keys():
             aura_tuple[0].tick(aura_tuple[1], self)
+
+    def gcd_ready(self):
+        return self.gcd_timer == 0
+
+    def aa_ready(self):
+        return self.aa_timer == 0
+
+    def auto_attack(self, target):
+        if self.aa_ready():
+            auto_attacks = 1
+            if self.has_aura(BarrageAura):
+                auto_attacks = 3
+
+            for i in xrange(0, auto_attacks):
+                target.add_potency(DamageHelper.calculate_potency(88, self)["potency"])
+
+            self.aa_timer = self.aa_cooldown
