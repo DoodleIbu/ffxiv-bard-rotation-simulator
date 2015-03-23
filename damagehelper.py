@@ -11,8 +11,10 @@ class DamageHelper:
         for aura in auras:
             cls = aura[0]
             result = cls.potency_modifier()
-            potency_modifier *= result.get("potency_multiply", 1.0)
-            critical_hit_rate += result.get("critical_hit_rate_add", 0.0)
+            if "potency_multiply" in result:
+                potency_modifier *= result["potency_multiply"]
+            if "critical_hit_rate_add" in result:
+                critical_hit_rate += result["critical_hit_rate_add"]
 
         critical_hit = False
         if random.random() < critical_hit_rate or kwargs.get("guaranteed_critical", False) is True:

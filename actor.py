@@ -91,7 +91,7 @@ class Actor:
             self.tp = max(self.tp + value, 0)
 
     def set_cooldown(self, skill, time):
-        if time == 0:
+        if time <= 0:
             self.check_now = True
 
         if skill in self.cooldowns:
@@ -106,52 +106,30 @@ class Actor:
         times = [sys.maxint, self.gcd_timer, self.aa_timer, self.animation_lock] \
               + [aura.duration for aura in self.auras.values()] \
               + self.cooldowns.values()
-        times = [time for time in times if time != 0]
-
+        times = [time for time in times if time > 0]
         return min(times)
 
-    # Advances time.
-    def advance_time(self, time):
-        self.gcd_timer = max(self.gcd_timer - time, 0)
-        self.aa_timer = max(self.aa_timer - time, 0)
-        self.animation_lock = max(self.animation_lock - time, 0)
+    def advance_cooldowns(self, time):
+        for cooldown in self.cooldowns.keys():
+            self.cooldowns[cooldown] = self.cooldowns[cooldown] - time
 
+    def advance_auras(self, time):
         auras_to_remove = []
         for aura_tuple, aura_timer in self.auras.iteritems():
-            aura_timer.duration = max(aura_timer.duration - time, 0)
-            if aura_timer.duration == 0:
+            aura_timer.duration -= time
+            if aura_timer.duration <= 0:
                 auras_to_remove.append((aura_tuple[0], aura_tuple[1]))
 
         for aura_to_remove in auras_to_remove:
-            del self.auras[aura_to_remove]
+            self.remove_aura(aura_to_remove[0], aura_to_remove[1])
 
-        for cooldown in self.cooldowns.keys():
-            self.cooldowns[cooldown] = max(self.cooldowns[cooldown] - time, 0)
-
-    def use(self, skill, target=None):
-        if target is None:
-            target = self
-
-        if skill == AutoAttack:
-            skill.use(self, target)
-            self.aa_timer = self.aa_cooldown
-
-        elif self.can_use(skill):
-            skill.use(self, target)
-            self.animation_lock = skill.animation_lock
-            if skill.is_off_gcd:
-                self.cooldowns[skill] = skill.cooldown
-            else:
-                self.add_tp(-1 * skill.tp_cost)
-                self.gcd_timer = self.gcd_cooldown
-
-    # Currently assumes the actor has access to the skill.
-    def can_use(self, skill):
-        if self.animation_lock == 0:
-            if skill.is_off_gcd:
-                return self.cooldowns[skill] == 0
-            else:
-                return self.gcd_timer == 0 and self.tp >= skill.tp_cost
+    # Advances time.
+    def advance_time(self, time):
+        self.gcd_timer -= time
+        self.aa_timer -= time
+        self.animation_lock -= time
+        self.advance_auras(time)
+        self.advance_cooldowns(time)
 
     # Includes DoT ticks and TP ticks
     def tick(self):
@@ -159,8 +137,35 @@ class Actor:
         for aura_tuple in self.auras.keys():
             aura_tuple[0].tick(aura_tuple[1], self)
 
+    def use(self, skill, target=None):
+        if target is None:
+            target = self
+
+        if self.can_use(skill):
+            skill.use(self, target)
+            if skill == AutoAttack:
+                self.aa_timer = self.aa_cooldown
+            elif skill.is_off_gcd:
+                self.animation_lock = skill.animation_lock
+                self.cooldowns[skill] = skill.cooldown
+            else:
+                self.add_tp(-1 * skill.tp_cost)
+                self.animation_lock = skill.animation_lock
+                self.gcd_timer = self.gcd_cooldown
+
+    # Currently assumes the actor has access to the skill.
+    def can_use(self, skill):
+        if skill == AutoAttack:
+            return self.aa_ready()
+
+        if self.animation_lock <= 0:
+            if skill.is_off_gcd:
+                return self.cooldowns[skill] <= 0
+            else:
+                return self.gcd_ready() and self.tp >= skill.tp_cost
+
     def gcd_ready(self):
-        return self.gcd_timer == 0
+        return self.gcd_timer <= 0
 
     def aa_ready(self):
-        return self.aa_timer == 0
+        return self.aa_timer <= 0
