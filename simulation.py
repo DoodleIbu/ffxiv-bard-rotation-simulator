@@ -37,8 +37,9 @@ class Simulation:
             self.tick()
 
             time_of_interest = self.get_time_of_interest()
+            # THIS IS WRONG!
             if time_of_interest == 0:
-                time_of_interest = 0.05 # Advance 0.05 sec if things don't appear to be moving
+                time_of_interest = 0.01 # Advance 0.01 sec if things don't appear to be moving
 
             self.advance_time(time_of_interest)
             self.player.advance_time(time_of_interest)
@@ -46,11 +47,13 @@ class Simulation:
 
 total_damage = 0
 trials = 100
+duration = 240
+
 for i in xrange(0, trials):
     player = Actor(Bard)
     enemy = Actor(None)
-    simulation = Simulation(player, enemy, 240, BardRotation)
+    simulation = Simulation(player, enemy, duration, BardRotation)
     simulation.run()
-    total_damage += enemy.potency * player.damage_per_potency / 240
+    total_damage += enemy.potency * player.damage_per_potency / duration
 
 print total_damage / trials

@@ -35,7 +35,7 @@ class InternalReleaseAura(Aura):
 
 class BloodForBloodAura(Aura):
     name = "Blood for Blood"
-    duration = 15
+    duration = 20
 
     @staticmethod
     def potency_modifier():
