@@ -11,12 +11,7 @@ class Actor:
     def __init__(self, job):
         self.job = job
 
-        # Initialize cooldown durations on actor
         self.cooldowns = {}
-        if self.job is not None:
-            for skill in job.skills:
-                self.cooldowns[skill] = 0
-
         self.auras = {}         # keys are (aura class, source actor)
         self.gcd_timer = 0      # time until next GCD
         self.aa_timer = 0       # time until next auto attack
@@ -74,11 +69,12 @@ class Actor:
         else:
             return 0
 
+    # Currently assumes the actor has access to the skill.
     def cooldown_duration(self, skill):
         if skill in self.cooldowns:
             return self.cooldowns[skill]
         else:
-            return sys.maxint
+            return 0
 
     # Adds damage in terms of potency.
     def add_potency(self, potency):
@@ -97,6 +93,9 @@ class Actor:
         if skill in self.cooldowns:
             self.cooldowns[skill] = time
 
+    def remove_cooldown(self, skill):
+        self.cooldowns.pop(skill)
+
     # Gets the amount of time that needs to pass until something important happens.
     def get_time_of_interest(self):
         if self.check_now:
@@ -110,8 +109,14 @@ class Actor:
         return min(times)
 
     def advance_cooldowns(self, time):
+        cooldowns_to_remove = []
         for cooldown in self.cooldowns.keys():
             self.cooldowns[cooldown] = self.cooldowns[cooldown] - time
+            if self.cooldowns[cooldown] <= 0:
+                cooldowns_to_remove.append(cooldown)
+
+        for cooldown_to_remove in cooldowns_to_remove:
+            self.remove_cooldown(cooldown_to_remove)
 
     def advance_auras(self, time):
         auras_to_remove = []
@@ -160,7 +165,7 @@ class Actor:
 
         if self.animation_lock <= 0:
             if skill.is_off_gcd:
-                return self.cooldowns[skill] <= 0
+                return not skill in self.cooldowns
             else:
                 return self.gcd_ready() and self.tp >= skill.tp_cost
 

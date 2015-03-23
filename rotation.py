@@ -1,10 +1,6 @@
 import sys
 from skill import *
 
-SHORT_DELAY = 0.7
-LONG_DELAY = 1.1
-GCD_DELAY = 1.0
-
 class Rotation:
     @staticmethod
     def get_time_of_interest(simulation, player):
