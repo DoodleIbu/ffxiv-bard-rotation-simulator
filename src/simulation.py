@@ -1,6 +1,6 @@
 from actor import *
+from server import *
 from skill import *
-from job import *
 from rotation import *
 
 import multiprocessing
@@ -8,41 +8,31 @@ import multiprocessing
 # TODO: support multiple players and enemies
 class Simulation:
     def __init__(self, player, enemy, duration, rotation):
+        self.server = Server([player, enemy])
         self.player = player
         self.enemy = enemy
         self.rotation = rotation
         self.duration = duration
-
         self.time = 0
-        self.tick_timer = 0 # Time until next TP/MP/DoT tick
 
     # Gets the amount of time that needs to pass until something important happens.
     def get_time_of_interest(self):
-        return min(self.tick_timer, self.player.get_time_of_interest(),
-                                    self.enemy.get_time_of_interest(),
-                                    self.rotation.get_time_of_interest(self, self.player))
+        return min(self.server.get_time_of_interest(),
+                   self.player.get_time_of_interest(),
+                   self.enemy.get_time_of_interest(),
+                   self.rotation.get_time_of_interest(self.server, self.player))
 
     def advance_time(self, time):
         self.time += time
-        self.tick_timer = self.tick_timer - time
-
-    def tick(self):
-        if self.tick_timer <= 0:
-            self.player.tick()
-            self.enemy.tick()
-            self.tick_timer = 3
+        self.player.advance_time(time)
+        self.enemy.advance_time(time)
+        self.server.advance_time(time)
 
     # How should I prevent double checking of time?
     def run(self):
         while self.time < self.duration:
-            self.rotation.use_skill(self, self.player, self.enemy)
-            self.tick()
-
-            time_of_interest = self.get_time_of_interest()
-
-            self.advance_time(time_of_interest)
-            self.player.advance_time(time_of_interest)
-            self.enemy.advance_time(time_of_interest)
+            self.rotation.use_skill(self.server, self.player, self.enemy)
+            self.advance_time(self.get_time_of_interest())
 
 def worker(args):
     total_damage = 0

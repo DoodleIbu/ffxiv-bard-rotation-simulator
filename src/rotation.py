@@ -3,16 +3,16 @@ from skill import *
 
 class Rotation:
     @staticmethod
-    def get_time_of_interest(simulation, player):
+    def get_time_of_interest(server, player):
         return sys.maxint
 
     @staticmethod
-    def use_skill(simulation, player, enemy):
+    def use_skill(server, player, enemy):
         pass
 
 class BardRotation(Rotation):
     @staticmethod
-    def get_time_of_interest(simulation, player):
+    def get_time_of_interest(server, player):
         time_until_barrage = player.aa_timer - (10 - player.aa_cooldown * 3)
         if time_until_barrage > 0:
             return time_until_barrage
@@ -21,7 +21,7 @@ class BardRotation(Rotation):
 
     # TODO: Add opener
     @staticmethod
-    def use_skill(simulation, player, enemy):
+    def use_skill(server, player, enemy):
         if player.aa_ready():
             player.use(AutoAttack, enemy)
 
@@ -65,7 +65,7 @@ class BardRotation(Rotation):
         if player.gcd_timer >= SHORT_DELAY:
 
             if player.can_use(Invigorate):
-                if (player.tp <= 600 and simulation.tick_timer > player.gcd_timer) or \
+                if (player.tp <= 600 and server.tick_timer > player.gcd_timer) or \
                     player.tp <= 540:
                     return player.use(Invigorate)
 
