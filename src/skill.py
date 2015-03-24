@@ -11,12 +11,16 @@ class Aura:
     duration = 0
     has_snapshot = False
 
-    @staticmethod
-    def tick(source, target):
+    @classmethod
+    def _tick(cls, source, target):
         pass
 
-    @staticmethod
-    def potency_modifier():
+    @classmethod
+    def tick(cls, source, target):
+        return cls._tick(source, target)
+
+    @classmethod
+    def potency_modifier(cls):
         return {}
 
 class SilenceAura(Aura):
@@ -27,8 +31,8 @@ class InternalReleaseAura(Aura):
     name = "Internal Release"
     duration = 15
 
-    @staticmethod
-    def potency_modifier():
+    @classmethod
+    def potency_modifier(cls):
         return {
             "critical_hit_rate_add": 0.10
         }
@@ -37,8 +41,8 @@ class BloodForBloodAura(Aura):
     name = "Blood for Blood"
     duration = 20
 
-    @staticmethod
-    def potency_modifier():
+    @classmethod
+    def potency_modifier(cls):
         return {
             "potency_multiply": 1.10
         }
@@ -47,8 +51,8 @@ class RagingStrikesAura(Aura):
     name = "Raging Strikes"
     duration = 20
 
-    @staticmethod
-    def potency_modifier():
+    @classmethod
+    def potency_modifier(cls):
         return {
             "potency_multiply": 1.20
         }
@@ -57,8 +61,8 @@ class HawksEyeAura(Aura):
     name = "Hawk's Eye"
     duration = 20
 
-    @staticmethod
-    def potency_modifier():
+    @classmethod
+    def potency_modifier(cls):
         return {
             "potency_multiply": 1.13 # about
         }
@@ -71,8 +75,8 @@ class StraightShotAura(Aura):
     name = "Straight Shot"
     duration = 20
 
-    @staticmethod
-    def potency_modifier():
+    @classmethod
+    def potency_modifier(cls):
         return {
             "critical_hit_rate_add": 0.10
         }
@@ -85,8 +89,8 @@ class XPotionOfDexterityAura(Aura):
     name = "Medicated"
     duration = 15
 
-    @staticmethod
-    def potency_modifier():
+    @classmethod
+    def potency_modifier(cls):
         return {
             "potency_multiply": 1.11 # about. Hawk's Eye also affects X-Pot bonuses (i.e. it's multiplicative)
         }
@@ -96,20 +100,20 @@ class FlamingArrowAura(Aura):
     duration = 30
     has_snapshot = True
 
-    @staticmethod
-    def tick(source, target):
+    @classmethod
+    def _tick(cls, source, target):
         result = DamageHelper.calculate_dot_potency(30, source, target, FlamingArrowAura)
-        target.add_potency(result["potency"])
+        target.add_potency(result)
 
 class VenomousBiteAura(Aura):
     name = "Venomous Bite"
     duration = 18
     has_snapshot = True
 
-    @staticmethod
-    def tick(source, target):
+    @classmethod
+    def _tick(cls, source, target):
         result = DamageHelper.calculate_dot_potency(35, source, target, VenomousBiteAura)
-        target.add_potency(result["potency"])
+        target.add_potency(result)
         if result["critical_hit"] is True and random.random() < 0.5:
             source.reset_cooldown(Bloodletter)
 
@@ -118,10 +122,10 @@ class WindbiteAura(Aura):
     duration = 18
     has_snapshot = True
 
-    @staticmethod
-    def tick(source, target):
+    @classmethod
+    def _tick(cls, source, target):
         result = DamageHelper.calculate_dot_potency(45, source, target, WindbiteAura)
-        target.add_potency(result["potency"])
+        target.add_potency(result)
         if result["critical_hit"] is True and random.random() < 0.5:
             source.reset_cooldown(Bloodletter)
 
@@ -133,9 +137,13 @@ class Skill:
     tp_cost = 0
     is_off_gcd = False
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         pass
+
+    @classmethod
+    def use(cls, source, target):
+        return cls._use(source, target)
 
 class InternalRelease(Skill):
     name = "Internal Release"
@@ -143,8 +151,8 @@ class InternalRelease(Skill):
     cooldown = 60
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         source.add_aura(InternalReleaseAura)
 
 class BloodForBlood(Skill):
@@ -153,8 +161,8 @@ class BloodForBlood(Skill):
     cooldown = 80
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         source.add_aura(BloodForBloodAura)
 
 class RagingStrikes(Skill):
@@ -163,8 +171,8 @@ class RagingStrikes(Skill):
     cooldown = 120
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         source.add_aura(RagingStrikesAura)
 
 class HawksEye(Skill):
@@ -173,8 +181,8 @@ class HawksEye(Skill):
     cooldown = 90
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         source.add_aura(HawksEyeAura)
 
 class Barrage(Skill):
@@ -183,8 +191,8 @@ class Barrage(Skill):
     cooldown = 90
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         source.add_aura(BarrageAura)
 
 class XPotionOfDexterity(Skill):
@@ -193,8 +201,8 @@ class XPotionOfDexterity(Skill):
     cooldown = 270
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         source.add_aura(XPotionOfDexterityAura)
 
 class HeavyShot(Skill):
@@ -202,24 +210,24 @@ class HeavyShot(Skill):
     animation_lock = GCD_DELAY
     tp_cost = 60
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         if random.random() < 0.2:
             source.add_aura(StraighterShotAura)
-        target.add_potency(DamageHelper.calculate_potency(150, source)["potency"])
+        target.add_potency(DamageHelper.calculate_potency(150, source))
 
 class StraightShot(Skill):
     name = "Straight Shot"
     animation_lock = GCD_DELAY
     tp_cost = 70
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         if source.has_aura(StraighterShotAura):
             source.remove_aura(StraighterShotAura)
-            target.add_potency(DamageHelper.calculate_potency(140, source, guaranteed_critical=True)["potency"])
+            target.add_potency(DamageHelper.calculate_potency(140, source, guaranteed_critical=True))
         else:
-            target.add_potency(DamageHelper.calculate_potency(140, source)["potency"])
+            target.add_potency(DamageHelper.calculate_potency(140, source))
         source.add_aura(StraightShotAura)
 
 class VenomousBite(Skill):
@@ -227,9 +235,9 @@ class VenomousBite(Skill):
     animation_lock = GCD_DELAY
     tp_cost = 80
 
-    @staticmethod
-    def use(source, target):
-        target.add_potency(DamageHelper.calculate_potency(100, source)["potency"])
+    @classmethod
+    def _use(cls, source, target):
+        target.add_potency(DamageHelper.calculate_potency(100, source))
         target.add_aura(VenomousBiteAura, source)
 
 class Windbite(Skill):
@@ -237,9 +245,9 @@ class Windbite(Skill):
     animation_lock = GCD_DELAY
     tp_cost = 80
 
-    @staticmethod
-    def use(source, target):
-        target.add_potency(DamageHelper.calculate_potency(60, source)["potency"])
+    @classmethod
+    def _use(cls, source, target):
+        target.add_potency(DamageHelper.calculate_potency(60, source))
         target.add_aura(WindbiteAura, source)
 
 class FlamingArrow(Skill): 
@@ -248,8 +256,8 @@ class FlamingArrow(Skill):
     cooldown = 60
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         target.add_aura(FlamingArrowAura, source)
 
 class BluntArrow(Skill):
@@ -258,9 +266,9 @@ class BluntArrow(Skill):
     cooldown = 30
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
-        target.add_potency(DamageHelper.calculate_potency(50, source)["potency"])
+    @classmethod
+    def _use(cls, source, target):
+        target.add_potency(DamageHelper.calculate_potency(50, source))
         target.add_aura(SilenceAura, source)
 
 class RepellingShot(Skill):
@@ -269,9 +277,9 @@ class RepellingShot(Skill):
     cooldown = 30
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
-        target.add_potency(DamageHelper.calculate_potency(80, source)["potency"])
+    @classmethod
+    def _use(cls, source, target):
+        target.add_potency(DamageHelper.calculate_potency(80, source))
 
 class Bloodletter(Skill):
     name = "Bloodletter"
@@ -279,9 +287,9 @@ class Bloodletter(Skill):
     cooldown = 15
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
-        target.add_potency(DamageHelper.calculate_potency(150, source)["potency"])
+    @classmethod
+    def _use(cls, source, target):
+        target.add_potency(DamageHelper.calculate_potency(150, source))
 
 class Invigorate(Skill):
     name = "Invigorate"
@@ -289,19 +297,19 @@ class Invigorate(Skill):
     cooldown = 120
     is_off_gcd = True
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         source.add_tp(400)
 
 class AutoAttack(Skill):
     name = "Auto Attack"
     animation_lock = 0
 
-    @staticmethod
-    def use(source, target):
+    @classmethod
+    def _use(cls, source, target):
         auto_attacks = 1
         if source.has_aura(BarrageAura):
             auto_attacks = 3
 
         for i in xrange(0, auto_attacks):
-            target.add_potency(DamageHelper.calculate_potency(88.7, source)["potency"])
+            target.add_potency(DamageHelper.calculate_potency(88.7, source))

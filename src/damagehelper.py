@@ -21,6 +21,7 @@ class DamageHelper:
             critical_hit = True
 
         return {
+            "source": source,
             "potency": potency * potency_modifier * (1 + critical_hit * 0.5),
             "critical_hit": critical_hit
         }

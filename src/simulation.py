@@ -28,7 +28,6 @@ class Simulation:
         self.enemy.advance_time(time)
         self.server.advance_time(time)
 
-    # How should I prevent double checking of time?
     def run(self):
         while self.time < self.duration:
             self.rotation.use_skill(self.server, self.player, self.enemy)
@@ -42,7 +41,7 @@ def worker(args):
         enemy = Actor("Enemy")
         simulation = Simulation(player, enemy, args["duration"], BardRotation)
         simulation.run()
-        total_damage += enemy.potency * player.damage_per_potency / args["duration"]
+        total_damage += enemy.potency_received[player]["potency"] * player.damage_per_potency / args["duration"]
 
     return total_damage
 

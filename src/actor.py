@@ -12,14 +12,25 @@ class Actor:
         self.aa_timer = 0       # time until next auto attack
         self.animation_lock = 0 # time until animation lock is finished
         self.tp = 1000
-        self.potency = 0 # Damage inflicted on actor in terms of potency.
-                         # Actual damage = self.potency * self.damage_per_potency
+        self.potency_dealt = {}
+        self.potency_received = {}
+        # Format:
+        # {
+        #     <actor>:
+        #         {
+        #             "potency": 500,
+        #             "breakdown": {
+        #                 <HeavyShot>: 250,
+        #                 <StraightShot>: 250
+        #             }
+        #         }
+        # }
 
-        # Static parameters that should be passed into the actor
+        # Static parameters that sh1ould be passed into the actor
         self.base_critical_hit_rate = 0.197586
         self.aa_cooldown = 3.04
         self.gcd_cooldown = 2.45
-        self.damage_per_potency = 2.4888 # TODO: associate potency damage on enemies with source
+        self.damage_per_potency = 2.4888
 
         # For time of interest purposes to check if a cooldown has been reset.
         self.check_now = True
@@ -44,7 +55,8 @@ class Actor:
             source = self
 
         identifier = AuraTimer.hash(aura_cls, source)
-        self.aura_timers.pop(identifier)
+        if identifier in self.aura_timers:
+            self.aura_timers.pop(identifier)
 
     def has_aura(self, aura_cls, source=None):
         if source is None:
@@ -80,8 +92,16 @@ class Actor:
             return 0
 
     # Adds damage in terms of potency.
-    def add_potency(self, potency):
-        self.potency += potency
+    def add_potency(self, args):
+        source = args["source"]
+        potency = args["potency"]
+        critical_hit = args["critical_hit"]
+
+        if source not in self.potency_received:
+            self.potency_received[source] = {}
+            self.potency_received[source]["potency"] = 0
+            self.potency_received[source]["breakdown"] = {}
+        self.potency_received[source]["potency"] += potency
 
     def add_tp(self, value):
         if value >= 0:
