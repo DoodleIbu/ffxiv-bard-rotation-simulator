@@ -25,7 +25,7 @@ class Actor:
         self.check_now = True
 
     def snapshot(self):
-        return self.auras.values()
+        return [AuraTimer(aura.cls, aura.source) for aura in self.auras.values()]
 
     # Adds an aura to the actor.
     def add_aura(self, aura, source=None):
@@ -67,6 +67,16 @@ class Actor:
         else:
             return 0
 
+    def set_cooldown(self, skill, time):
+        if time <= 0:
+            self.check_now = True
+
+        if skill in self.cooldowns:
+            self.cooldowns[skill] = time
+
+    def remove_cooldown(self, skill):
+        self.cooldowns.pop(skill)
+
     # Currently assumes the actor has access to the skill.
     def cooldown_duration(self, skill):
         if skill in self.cooldowns:
@@ -83,16 +93,6 @@ class Actor:
             self.tp = min(self.tp + value, 1000)
         else:
             self.tp = max(self.tp + value, 0)
-
-    def set_cooldown(self, skill, time):
-        if time <= 0:
-            self.check_now = True
-
-        if skill in self.cooldowns:
-            self.cooldowns[skill] = time
-
-    def remove_cooldown(self, skill):
-        self.cooldowns.pop(skill)
 
     # Gets the amount of time that needs to pass until something important happens.
     def get_time_of_interest(self):
@@ -121,7 +121,7 @@ class Actor:
     def advance_cooldowns(self, time):
         cooldowns_to_remove = []
         for cooldown, _ in self.cooldowns.iteritems():
-            self.cooldowns[cooldown] = self.cooldowns[cooldown] - time
+            self.cooldowns[cooldown] -= time
             if self.cooldowns[cooldown] <= 0:
                 cooldowns_to_remove.append(cooldown)
 
