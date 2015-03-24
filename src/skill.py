@@ -111,7 +111,7 @@ class VenomousBiteAura(Aura):
         result = DamageHelper.calculate_dot_potency(35, source, target, VenomousBiteAura)
         target.add_potency(result["potency"])
         if result["critical_hit"] is True and random.random() < 0.5:
-            source.set_cooldown(Bloodletter, 0)
+            source.reset_cooldown(Bloodletter)
 
 class WindbiteAura(Aura):
     name = "Windbite"
@@ -123,7 +123,7 @@ class WindbiteAura(Aura):
         result = DamageHelper.calculate_dot_potency(45, source, target, WindbiteAura)
         target.add_potency(result["potency"])
         if result["critical_hit"] is True and random.random() < 0.5:
-            source.set_cooldown(Bloodletter, 0)
+            source.reset_cooldown(Bloodletter)
 
 # Data on skills
 class Skill:

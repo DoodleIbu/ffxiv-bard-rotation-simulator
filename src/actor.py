@@ -67,20 +67,15 @@ class Actor:
         else:
             return 0
 
-    def set_cooldown(self, skill, time):
-        if time <= 0:
-            self.check_now = True
-
+    def reset_cooldown(self, skill):
+        self.check_now = True
         if skill in self.cooldowns:
-            self.cooldowns[skill] = time
-
-    def remove_cooldown(self, skill):
-        self.cooldowns.pop(skill)
+            self.cooldowns.pop(skill)
 
     # Currently assumes the actor has access to the skill.
     def cooldown_duration(self, skill):
         if skill in self.cooldowns:
-            return self.cooldowns[skill]
+            return self.cooldowns[skill].duration
         else:
             return 0
 
@@ -113,20 +108,20 @@ class Actor:
                 time = aura.duration
 
         for _, cooldown in self.cooldowns.iteritems():
-            if cooldown < time:
-                time = cooldown
+            if cooldown.duration < time:
+                time = cooldown.duration
 
         return time
 
     def advance_cooldowns(self, time):
         cooldowns_to_remove = []
-        for cooldown, _ in self.cooldowns.iteritems():
-            self.cooldowns[cooldown] -= time
-            if self.cooldowns[cooldown] <= 0:
-                cooldowns_to_remove.append(cooldown)
+        for _, cooldown_timer in self.cooldowns.iteritems():
+            cooldown_timer.duration -= time
+            if cooldown_timer.duration <= 0:
+                cooldowns_to_remove.append(cooldown_timer.cls)
 
-        for cooldown in cooldowns_to_remove:
-            self.remove_cooldown(cooldown)
+        for skill in cooldowns_to_remove:
+            self.cooldowns.pop(skill)
 
     def advance_auras(self, time):
         auras_to_remove = []
@@ -162,7 +157,7 @@ class Actor:
                 self.aa_timer = self.aa_cooldown
             elif skill.is_off_gcd:
                 self.animation_lock = skill.animation_lock
-                self.cooldowns[skill] = skill.cooldown
+                self.cooldowns[skill] = CooldownTimer(skill)
             else:
                 self.add_tp(-1 * skill.tp_cost)
                 self.animation_lock = skill.animation_lock
