@@ -27,9 +27,9 @@ class DamageHelper:
 
     @staticmethod
     def calculate_potency(potency, source, **kwargs):
-        return DamageHelper._calculate_potency(potency, source, source.auras.values(), **kwargs)
+        return DamageHelper._calculate_potency(potency, source, source.aura_timers.values(), **kwargs)
 
     @staticmethod
     def calculate_dot_potency(potency, source, target, aura, **kwargs):
         identifier = AuraTimer.hash(aura, source)
-        return DamageHelper._calculate_potency(potency, source, target.auras[identifier].snapshot, **kwargs)
+        return DamageHelper._calculate_potency(potency, source, target.aura_timers[identifier].snapshot, **kwargs)

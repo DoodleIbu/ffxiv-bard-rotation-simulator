@@ -6,8 +6,8 @@ from timer import *
 class Actor:
     def __init__(self, name):
         self.name = name
-        self.cooldowns = {}
-        self.auras = {}
+        self.cooldown_timers = {}
+        self.aura_timers = {}
         self.gcd_timer = 0      # time until next GCD
         self.aa_timer = 0       # time until next auto attack
         self.animation_lock = 0 # time until animation lock is finished
@@ -25,57 +25,57 @@ class Actor:
         self.check_now = True
 
     def snapshot(self):
-        return [AuraTimer(aura.cls, aura.source) for aura in self.auras.values()]
+        return [AuraTimer(aura_timer.cls, aura_timer.source) for aura_timer in self.aura_timers.values()]
 
     # Adds an aura to the actor.
-    def add_aura(self, aura, source=None):
+    def add_aura(self, aura_cls, source=None):
         if source is None:
             source = self
 
         aura_timer = None
-        if aura.has_snapshot:
-            aura_timer = AuraTimer(aura, source, source.snapshot())
+        if aura_cls.has_snapshot:
+            aura_timer = AuraTimer(aura_cls, source, source.snapshot())
         else:
-            aura_timer = AuraTimer(aura, source)
-        self.auras[hash(aura_timer)] = aura_timer
+            aura_timer = AuraTimer(aura_cls, source)
+        self.aura_timers[hash(aura_timer)] = aura_timer
 
-    def remove_aura(self, aura, source=None):
+    def remove_aura(self, aura_cls, source=None):
         if source is None:
             source = self
 
-        identifier = AuraTimer.hash(aura, source)
-        self.auras.pop(identifier)
+        identifier = AuraTimer.hash(aura_cls, source)
+        self.aura_timers.pop(identifier)
 
-    def has_aura(self, aura, source=None):
+    def has_aura(self, aura_cls, source=None):
         if source is None:
             source = self
 
-        identifier = AuraTimer.hash(aura, source)
-        if identifier in self.auras:
+        identifier = AuraTimer.hash(aura_cls, source)
+        if identifier in self.aura_timers:
             return True
         else:
             return False
 
     # Returns 0 if aura does not exist.
-    def aura_duration(self, aura, source=None):
+    def aura_duration(self, aura_cls, source=None):
         if source is None:
             source = self
 
-        identifier = AuraTimer.hash(aura, source)
-        if identifier in self.auras:
-            return self.auras[identifier].duration
+        identifier = AuraTimer.hash(aura_cls, source)
+        if identifier in self.aura_timers:
+            return self.aura_timers[identifier].duration
         else:
             return 0
 
-    def reset_cooldown(self, skill):
+    def reset_cooldown(self, skill_cls):
         self.check_now = True
-        if skill in self.cooldowns:
-            self.cooldowns.pop(skill)
+        if skill_cls in self.cooldown_timers:
+            self.cooldown_timers.pop(skill_cls)
 
     # Currently assumes the actor has access to the skill.
-    def cooldown_duration(self, skill):
-        if skill in self.cooldowns:
-            return self.cooldowns[skill].duration
+    def cooldown_duration(self, skill_cls):
+        if skill_cls in self.cooldown_timers:
+            return self.cooldown_timers[skill_cls].duration
         else:
             return 0
 
@@ -103,35 +103,35 @@ class Actor:
         if self.animation_lock < time and self.animation_lock > 0:
             time = self.animation_lock
 
-        for _, aura in self.auras.iteritems():
-            if aura.duration < time:
-                time = aura.duration
+        for _, aura_timer in self.aura_timers.iteritems():
+            if aura_timer.duration < time:
+                time = aura_timer.duration
 
-        for _, cooldown in self.cooldowns.iteritems():
-            if cooldown.duration < time:
-                time = cooldown.duration
+        for _, cooldown_timer in self.cooldown_timers.iteritems():
+            if cooldown_timer.duration < time:
+                time = cooldown_timer.duration
 
         return time
 
     def advance_cooldowns(self, time):
-        cooldowns_to_remove = []
-        for _, cooldown_timer in self.cooldowns.iteritems():
+        timers_to_remove = []
+        for _, cooldown_timer in self.cooldown_timers.iteritems():
             cooldown_timer.duration -= time
             if cooldown_timer.duration <= 0:
-                cooldowns_to_remove.append(cooldown_timer.cls)
+                timers_to_remove.append(cooldown_timer.cls)
 
-        for skill in cooldowns_to_remove:
-            self.cooldowns.pop(skill)
+        for skill_cls in timers_to_remove:
+            self.cooldown_timers.pop(skill_cls)
 
     def advance_auras(self, time):
-        auras_to_remove = []
-        for _, aura_timer in self.auras.iteritems():
+        timers_to_remove = []
+        for _, aura_timer in self.aura_timers.iteritems():
             aura_timer.duration -= time
             if aura_timer.duration <= 0:
-                auras_to_remove.append(hash(aura_timer))
+                timers_to_remove.append(hash(aura_timer))
 
-        for aura in auras_to_remove:
-            self.auras.pop(aura)
+        for identifier in timers_to_remove:
+            self.aura_timers.pop(identifier)
 
     # Advances time.
     def advance_time(self, time):
@@ -144,35 +144,35 @@ class Actor:
     # Includes DoT ticks and TP ticks
     def tick(self):
         self.add_tp(60)
-        for _, aura in self.auras.iteritems():
+        for _, aura in self.aura_timers.iteritems():
             aura.cls.tick(aura.source, self)
 
-    def use(self, skill, target=None):
+    def use(self, skill_cls, target=None):
         if target is None:
             target = self
 
-        if self.can_use(skill):
-            skill.use(self, target)
-            if skill == AutoAttack:
+        if self.can_use(skill_cls):
+            skill_cls.use(self, target)
+            if skill_cls == AutoAttack:
                 self.aa_timer = self.aa_cooldown
-            elif skill.is_off_gcd:
-                self.animation_lock = skill.animation_lock
-                self.cooldowns[skill] = CooldownTimer(skill)
+            elif skill_cls.is_off_gcd:
+                self.animation_lock = skill_cls.animation_lock
+                self.cooldown_timers[skill_cls] = CooldownTimer(skill_cls)
             else:
-                self.add_tp(-1 * skill.tp_cost)
-                self.animation_lock = skill.animation_lock
+                self.add_tp(-1 * skill_cls.tp_cost)
+                self.animation_lock = skill_cls.animation_lock
                 self.gcd_timer = self.gcd_cooldown
 
     # Currently assumes the actor has access to the skill.
-    def can_use(self, skill):
-        if skill == AutoAttack:
+    def can_use(self, skill_cls):
+        if skill_cls == AutoAttack:
             return self.aa_ready()
 
         if self.animation_lock <= 0:
-            if skill.is_off_gcd:
-                return not skill in self.cooldowns
+            if skill_cls.is_off_gcd:
+                return not skill_cls in self.cooldown_timers
             else:
-                return self.gcd_ready() and self.tp >= skill.tp_cost
+                return self.gcd_ready() and self.tp >= skill_cls.tp_cost
 
     def gcd_ready(self):
         return self.gcd_timer <= 0
