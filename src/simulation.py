@@ -56,12 +56,14 @@ def worker(args):
 
     return total_damage
 
-count = multiprocessing.cpu_count()
-pool = multiprocessing.Pool(processes=count)
-trials = 100000
-print sum(pool.map(worker, [{ "duration": 240, "trials": trials / count }] * count)) / trials
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    count = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(processes=count)
+    trials = 100000
+    print sum(pool.map(worker, [{ "duration": 240, "trials": trials / count }] * count)) / trials
 
-# print worker({
-#     "duration": 240,
-#     "trials": 100
-# }) / 100
+    # print worker({
+    #     "duration": 240,
+    #     "trials": 100
+    # }) / 100
