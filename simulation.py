@@ -43,12 +43,12 @@ class Simulation:
             self.enemy.advance_time(time_of_interest)
 
 total_damage = 0
-trials = 100
+trials = 10000
 duration = 240
 
 for i in xrange(0, trials):
-    player = Actor(Bard)
-    enemy = Actor(None)
+    player = Actor("Bard")
+    enemy = Actor("Enemy")
     simulation = Simulation(player, enemy, duration, BardRotation)
     simulation.run()
     total_damage += enemy.potency * player.damage_per_potency / duration

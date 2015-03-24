@@ -1,4 +1,5 @@
 import random
+from timer import *
 
 # Helper class to calculate potency.
 class DamageHelper:
@@ -9,8 +10,7 @@ class DamageHelper:
         critical_hit_rate = source.base_critical_hit_rate # Might be snapshotted, but it's pretty pointless to simulate that
 
         for aura in auras:
-            cls = aura[0]
-            result = cls.potency_modifier()
+            result = aura.cls.potency_modifier()
             if "potency_multiply" in result:
                 potency_modifier *= result["potency_multiply"]
             if "critical_hit_rate_add" in result:
@@ -27,8 +27,9 @@ class DamageHelper:
 
     @staticmethod
     def calculate_potency(potency, source, **kwargs):
-        return DamageHelper._calculate_potency(potency, source, source.auras.keys(), **kwargs)
+        return DamageHelper._calculate_potency(potency, source, source.auras.values(), **kwargs)
 
     @staticmethod
     def calculate_dot_potency(potency, source, target, aura, **kwargs):
-        return DamageHelper._calculate_potency(potency, source, target.auras[(aura, source)].snapshot, **kwargs)
+        identifier = AuraTimer.hash(aura, source)
+        return DamageHelper._calculate_potency(potency, source, target.auras[identifier].snapshot, **kwargs)

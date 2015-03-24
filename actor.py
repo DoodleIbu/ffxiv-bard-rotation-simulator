@@ -1,18 +1,13 @@
 import sys
 from skill import *
-
-class AuraTimer:
-    def __init__(self, duration=0, snapshot=[]):
-        self.duration = duration
-        self.snapshot = snapshot
+from timer import *
 
 # Dumb slate for a character or enemy.
 class Actor:
-    def __init__(self, job):
-        self.job = job
-
+    def __init__(self, name):
+        self.name = name
         self.cooldowns = {}
-        self.auras = {}         # keys are (aura class, source actor)
+        self.auras = {}
         self.gcd_timer = 0      # time until next GCD
         self.aa_timer = 0       # time until next auto attack
         self.animation_lock = 0 # time until animation lock is finished
@@ -30,7 +25,7 @@ class Actor:
         self.check_now = True
 
     def snapshot(self):
-        return self.auras.keys()
+        return self.auras.values()
 
     # Adds an aura to the actor.
     def add_aura(self, aura, source=None):
@@ -39,22 +34,24 @@ class Actor:
 
         aura_timer = None
         if aura.has_snapshot:
-            aura_timer = AuraTimer(aura.duration, source.snapshot())
+            aura_timer = AuraTimer(aura, source, source.snapshot())
         else:
-            aura_timer = AuraTimer(aura.duration)
-        self.auras[(aura, source)] = aura_timer
+            aura_timer = AuraTimer(aura, source)
+        self.auras[hash(aura_timer)] = aura_timer
 
     def remove_aura(self, aura, source=None):
         if source is None:
             source = self
 
-        self.auras.pop((aura, source), None)
+        identifier = AuraTimer.hash(aura, source)
+        self.auras.pop(identifier)
 
     def has_aura(self, aura, source=None):
         if source is None:
             source = self
 
-        if (aura, source) in self.auras:
+        identifier = AuraTimer.hash(aura, source)
+        if identifier in self.auras:
             return True
         else:
             return False
@@ -64,8 +61,9 @@ class Actor:
         if source is None:
             source = self
 
-        if (aura, source) in self.auras:
-            return self.auras[(aura, source)].duration
+        identifier = AuraTimer.hash(aura, source)
+        if identifier in self.auras:
+            return self.auras[identifier].duration
         else:
             return 0
 
@@ -102,31 +100,43 @@ class Actor:
             self.check_now = False
             return 0
 
-        times = [sys.maxint, self.gcd_timer, self.aa_timer, self.animation_lock] \
-              + [aura.duration for aura in self.auras.values()] \
-              + self.cooldowns.values()
-        times = [time for time in times if time > 0]
-        return min(times)
+        time = sys.maxint
+        if self.gcd_timer < time and self.gcd_timer > 0:
+            time = self.gcd_timer
+        if self.aa_timer < time and self.aa_timer > 0:
+            time = self.aa_timer
+        if self.animation_lock < time and self.animation_lock > 0:
+            time = self.animation_lock
+
+        for _, aura in self.auras.iteritems():
+            if aura.duration < time:
+                time = aura.duration
+
+        for _, cooldown in self.cooldowns.iteritems():
+            if cooldown < time:
+                time = cooldown
+
+        return time
 
     def advance_cooldowns(self, time):
         cooldowns_to_remove = []
-        for cooldown in self.cooldowns.keys():
+        for cooldown, _ in self.cooldowns.iteritems():
             self.cooldowns[cooldown] = self.cooldowns[cooldown] - time
             if self.cooldowns[cooldown] <= 0:
                 cooldowns_to_remove.append(cooldown)
 
-        for cooldown_to_remove in cooldowns_to_remove:
-            self.remove_cooldown(cooldown_to_remove)
+        for cooldown in cooldowns_to_remove:
+            self.remove_cooldown(cooldown)
 
     def advance_auras(self, time):
         auras_to_remove = []
-        for aura_tuple, aura_timer in self.auras.iteritems():
+        for _, aura_timer in self.auras.iteritems():
             aura_timer.duration -= time
             if aura_timer.duration <= 0:
-                auras_to_remove.append((aura_tuple[0], aura_tuple[1]))
+                auras_to_remove.append(hash(aura_timer))
 
-        for aura_to_remove in auras_to_remove:
-            self.remove_aura(aura_to_remove[0], aura_to_remove[1])
+        for aura in auras_to_remove:
+            self.auras.pop(aura)
 
     # Advances time.
     def advance_time(self, time):
@@ -139,8 +149,8 @@ class Actor:
     # Includes DoT ticks and TP ticks
     def tick(self):
         self.add_tp(60)
-        for aura_tuple in self.auras.keys():
-            aura_tuple[0].tick(aura_tuple[1], self)
+        for _, aura in self.auras.iteritems():
+            aura.cls.tick(aura.source, self)
 
     def use(self, skill, target=None):
         if target is None:
