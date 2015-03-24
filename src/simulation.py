@@ -63,5 +63,5 @@ print sum(pool.map(worker, [{ "duration": 240, "trials": trials / count }] * cou
 
 # print worker({
 #     "duration": 240,
-#     "trials": 100000
-# }) / 100000
+#     "trials": 100
+# }) / 100

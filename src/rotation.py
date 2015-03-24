@@ -13,7 +13,11 @@ class Rotation:
 class BardRotation(Rotation):
     @staticmethod
     def get_time_of_interest(simulation, player):
-        return sys.maxint
+        time_until_barrage = player.aa_timer - (10 - player.aa_cooldown * 3)
+        if time_until_barrage > 0:
+            return time_until_barrage
+        else:
+            return sys.maxint
 
     # TODO: Add opener
     @staticmethod
