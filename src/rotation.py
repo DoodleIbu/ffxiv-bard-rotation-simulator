@@ -31,6 +31,8 @@ class BardRotation(Rotation):
             if player.can_use(StraightShot):
                 if not player.has_aura(StraightShotAura):
                     return player.use(StraightShot, enemy)
+                elif player.aura_duration(StraightShotAura) < player.gcd_cooldown:
+                    return player.use(StraightShot, enemy)
                 elif enemy.has_aura(WindbiteAura, player) and enemy.aura_duration(WindbiteAura, player) < player.gcd_cooldown * 2 and \
                    player.aura_duration(StraightShotAura) < player.gcd_cooldown * 2:
                     return player.use(StraightShot, enemy)
