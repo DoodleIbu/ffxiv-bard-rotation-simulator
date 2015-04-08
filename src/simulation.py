@@ -39,7 +39,7 @@ def worker(args):
     for i in xrange(0, args["trials"]):
         player = Actor("Bard")
         enemy = Actor("Enemy")
-        simulation = Simulation(player, enemy, args["duration"], BardRotation)
+        simulation = Simulation(player, enemy, args["duration"], BardRotation())
         simulation.run()
         total_damage += enemy.potency_received[player]["potency"] * player.damage_per_potency / args["duration"]
 
@@ -49,5 +49,5 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
     count = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=count)
-    trials = 100000
+    trials = 1000
     print sum(pool.map(worker, [{ "duration": 240, "trials": trials / count }] * count)) / trials

@@ -2,26 +2,30 @@ import sys
 from skill import *
 
 class Rotation:
-    @staticmethod
-    def get_time_of_interest(server, player):
+    def get_time_of_interest(self, server, player):
         return sys.maxint
 
-    @staticmethod
-    def use_skill(server, player, enemy):
+    def use_skill(self, server, player, enemy):
         pass
 
 class BardRotation(Rotation):
-    @staticmethod
-    def get_time_of_interest(server, player):
+
+    def __init__(self):
+        self.opener_state = 0
+
+    def _opener(self, server, player, enemy):
+        return
+
+    def get_time_of_interest(self, server, player):
         time_until_barrage = player.aa_timer - (10 - player.aa_cooldown * 3)
         if time_until_barrage > 0:
             return time_until_barrage
         else:
             return sys.maxint
 
-    # TODO: Add opener
-    @staticmethod
-    def use_skill(server, player, enemy):
+    def use_skill(self, server, player, enemy):
+        self._opener(server, player, enemy)
+
         if player.aa_ready():
             player.use(AutoAttack, enemy)
 

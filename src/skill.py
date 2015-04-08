@@ -15,6 +15,12 @@ class Aura:
     def _tick(cls, source, target):
         pass
 
+    # TO CONSIDER: LOGGING MULTIHIT MOVES
+    # add_potency should probably add the log?
+    # Or maybe tick should just return an array of results?
+    # append source, target to all of them
+    # log to source and target
+    # source and target should log only if logging is enabled for them
     @classmethod
     def tick(cls, source, target):
         return cls._tick(source, target)
