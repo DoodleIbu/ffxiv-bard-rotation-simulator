@@ -49,5 +49,5 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
     count = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=count)
-    trials = 1000
+    trials = 100000
     print sum(pool.map(worker, [{ "duration": 240, "trials": trials / count }] * count)) / trials

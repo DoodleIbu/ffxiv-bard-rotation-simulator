@@ -77,7 +77,6 @@ class BardRotation(Rotation):
 
             use_internal_release = enemy.aura_duration(WindbiteAura, player) < 15 \
                                and enemy.aura_duration(VenomousBiteAura, player) < 15
-
             if player.can_use(InternalRelease) and use_internal_release:
                 return player.use(InternalRelease)
 

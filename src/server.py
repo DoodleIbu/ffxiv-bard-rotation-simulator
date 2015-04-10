@@ -1,7 +1,9 @@
+import random
+
 # Server-specific timers.
 class Server:
     def __init__(self, actors):
-        self.tick_timer = 0 # Time until next TP/MP/DoT tick
+        self.tick_timer = random.random() * 3 # Time until next TP/MP/DoT tick
         self.actors = actors
 
     def tick(self):
