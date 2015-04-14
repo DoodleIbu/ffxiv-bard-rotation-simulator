@@ -50,4 +50,5 @@ if __name__ == "__main__":
     count = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=count)
     trials = 100000
-    print sum(pool.map(worker, [{ "duration": 240, "trials": trials / count }] * count)) / trials
+    print sum(pool.map(worker, [{ "duration": 241.5, "trials": trials / count }] * count)) / trials \
+        * 241.5 / 240 # Account for prebuffing in rotation

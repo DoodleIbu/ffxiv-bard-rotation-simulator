@@ -79,6 +79,9 @@ class Actor:
         else:
             return 0
 
+    def add_cooldown(self, skill_cls):
+        self.cooldown_timers[skill_cls] = CooldownTimer(skill_cls)
+
     def reset_cooldown(self, skill_cls):
         self.check_now = True
         if skill_cls in self.cooldown_timers:
@@ -177,7 +180,7 @@ class Actor:
                 self.aa_timer = self.aa_cooldown
             elif skill_cls.is_off_gcd:
                 self.animation_lock = skill_cls.animation_lock
-                self.cooldown_timers[skill_cls] = CooldownTimer(skill_cls)
+                self.add_cooldown(skill_cls)
             else:
                 self.add_tp(-1 * skill_cls.tp_cost)
                 self.animation_lock = skill_cls.animation_lock

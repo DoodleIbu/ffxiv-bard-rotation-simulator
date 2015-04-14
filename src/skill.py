@@ -1,9 +1,10 @@
 import random
 from damagehelper import *
 
-SHORT_DELAY = 0.7
-LONG_DELAY = 1.1
-GCD_DELAY = 1.0
+# TODO: Verify these values
+SHORT_DELAY = 0.75
+LONG_DELAY = 1.3 # X-Pot delay
+GCD_DELAY = 0.9
 
 # Data on auras
 class Aura:
@@ -318,4 +319,4 @@ class AutoAttack(Skill):
             auto_attacks = 3
 
         for i in xrange(0, auto_attacks):
-            target.add_potency(DamageHelper.calculate_potency(88.7, source))
+            target.add_potency(DamageHelper.calculate_potency(88.7, source)) # TODO: Use actual damage models to calculate damage?
