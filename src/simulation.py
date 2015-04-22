@@ -1,7 +1,7 @@
 from actor import *
 from server import *
 from skill import *
-from rotation import *
+from bard_rotation import *
 
 import multiprocessing
 

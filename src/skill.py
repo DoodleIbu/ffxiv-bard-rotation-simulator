@@ -1,5 +1,5 @@
 import random
-from damagehelper import *
+import damage
 
 # TODO: Verify these values
 SHORT_DELAY = 0.75
@@ -109,7 +109,7 @@ class FlamingArrowAura(Aura):
 
     @classmethod
     def _tick(cls, source, target):
-        result = DamageHelper.calculate_dot_potency(30, source, target, FlamingArrowAura)
+        result = damage.calculate_dot_potency(30, source, target, FlamingArrowAura)
         target.add_potency(result)
 
 class VenomousBiteAura(Aura):
@@ -119,7 +119,7 @@ class VenomousBiteAura(Aura):
 
     @classmethod
     def _tick(cls, source, target):
-        result = DamageHelper.calculate_dot_potency(35, source, target, VenomousBiteAura)
+        result = damage.calculate_dot_potency(35, source, target, VenomousBiteAura)
         target.add_potency(result)
         if result["critical_hit"] is True and random.random() < 0.5:
             source.reset_cooldown(Bloodletter)
@@ -131,7 +131,7 @@ class WindbiteAura(Aura):
 
     @classmethod
     def _tick(cls, source, target):
-        result = DamageHelper.calculate_dot_potency(45, source, target, WindbiteAura)
+        result = damage.calculate_dot_potency(45, source, target, WindbiteAura)
         target.add_potency(result)
         if result["critical_hit"] is True and random.random() < 0.5:
             source.reset_cooldown(Bloodletter)
@@ -221,7 +221,7 @@ class HeavyShot(Skill):
     def _use(cls, source, target):
         if random.random() < 0.2:
             source.add_aura(StraighterShotAura)
-        target.add_potency(DamageHelper.calculate_potency(150, source))
+        target.add_potency(damage.calculate_potency(150, source))
 
 class StraightShot(Skill):
     name = "Straight Shot"
@@ -232,9 +232,9 @@ class StraightShot(Skill):
     def _use(cls, source, target):
         if source.has_aura(StraighterShotAura):
             source.remove_aura(StraighterShotAura)
-            target.add_potency(DamageHelper.calculate_potency(140, source, guaranteed_critical=True))
+            target.add_potency(damage.calculate_potency(140, source, guaranteed_critical=True))
         else:
-            target.add_potency(DamageHelper.calculate_potency(140, source))
+            target.add_potency(damage.calculate_potency(140, source))
         source.add_aura(StraightShotAura)
 
 class VenomousBite(Skill):
@@ -244,7 +244,7 @@ class VenomousBite(Skill):
 
     @classmethod
     def _use(cls, source, target):
-        target.add_potency(DamageHelper.calculate_potency(100, source))
+        target.add_potency(damage.calculate_potency(100, source))
         target.add_aura(VenomousBiteAura, source)
 
 class Windbite(Skill):
@@ -254,7 +254,7 @@ class Windbite(Skill):
 
     @classmethod
     def _use(cls, source, target):
-        target.add_potency(DamageHelper.calculate_potency(60, source))
+        target.add_potency(damage.calculate_potency(60, source))
         target.add_aura(WindbiteAura, source)
 
 class FlamingArrow(Skill): 
@@ -275,7 +275,7 @@ class BluntArrow(Skill):
 
     @classmethod
     def _use(cls, source, target):
-        target.add_potency(DamageHelper.calculate_potency(50, source))
+        target.add_potency(damage.calculate_potency(50, source))
         target.add_aura(SilenceAura, source)
 
 class RepellingShot(Skill):
@@ -286,7 +286,7 @@ class RepellingShot(Skill):
 
     @classmethod
     def _use(cls, source, target):
-        target.add_potency(DamageHelper.calculate_potency(80, source))
+        target.add_potency(damage.calculate_potency(80, source))
 
 class Bloodletter(Skill):
     name = "Bloodletter"
@@ -296,7 +296,7 @@ class Bloodletter(Skill):
 
     @classmethod
     def _use(cls, source, target):
-        target.add_potency(DamageHelper.calculate_potency(150, source))
+        target.add_potency(damage.calculate_potency(150, source))
 
 class Invigorate(Skill):
     name = "Invigorate"
@@ -319,4 +319,4 @@ class AutoAttack(Skill):
             auto_attacks = 3
 
         for i in xrange(0, auto_attacks):
-            target.add_potency(DamageHelper.calculate_potency(88.7, source)) # TODO: Use actual damage models to calculate damage?
+            target.add_potency(damage.calculate_potency(88.7, source)) # TODO: Use actual damage models to calculate damage?
